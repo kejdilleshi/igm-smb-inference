@@ -1,0 +1,63 @@
+smb_inference:
+
+  # Time parameters for glacier simulation
+  ttot: 2017.0
+  t_start: 1700.0
+  dtmax: 1.0
+  cfl: 0.2
+
+  # Ice flow emulator configuration
+  emulator:
+    from_state: false          # If true, use state.iceflow_model (from data_assimilation/iceflow) instead of loading from disk
+    model_path: iceflow-model  # Path to emulator artifact directory
+    Nz: 4                     # Number of vertical levels (only used when loading from disk)
+
+  # Observation data
+  observations:
+    geology_file: ''           # Path to NetCDF with observation surfaces (e.g., geology.nc). If empty, uses state variable.
+    state_variable: thk        # State variable to use as observation target when geology_file is empty
+    observation_years:
+      - surf_1880
+      - surf_1926
+      - surf_1957
+      - surf_1980
+      - surf_1999
+      - surf_2009
+      - surf_2017
+
+  # Inversion method configuration
+  inversion:
+    method: profile            # Inversion method: 'profile' (1D elevation-dependent SMB)
+    dz: 100.0                 # Elevation bin spacing (m) for profile method
+    smb_init_low: -5.0        # Initial SMB at lowest elevation (m ice eq/yr)
+    smb_init_high: 2.0        # Initial SMB at highest elevation (m ice eq/yr)
+
+  # Optimization parameters
+  optimization:
+    nbitmax: 300
+    learning_rate: 0.05
+    regularisation: 0.05       # Smoothness regularization weight for SMB profile curvature
+    early_stop_patience: 0     # 0 = disabled
+    early_stop_threshold: 1.0e-5
+    loss_threshold: 1.0e-4
+    retrain_emulator: true      # Retrain iceflow emulator during forward simulation
+    retrain_interval: 1.0        # Retrain every N simulated years (inside the forward loop)
+    retrain_emulator_freq: 10     # Retrain every N outer optimization iterations (0 = only first)
+
+  # Physical constants
+  physics:
+    rho: 910.0
+    g: 9.81
+    fd: 0.25e-16
+    dx: 100.0                 # Fallback grid spacing if not derivable from state
+    dy: 100.0
+    init_slidingco: 0.04
+    init_arrhenius: 90.0
+
+  # Output configuration
+  output:
+    vis_freq: 10.0
+    visualize: false
+    outdir: ./results/smb_inference
+    plot_loss: true
+    save_results: true
