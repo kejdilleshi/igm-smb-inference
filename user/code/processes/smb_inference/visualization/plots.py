@@ -2,7 +2,11 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-from IPython.display import clear_output
+try:
+    from IPython.display import clear_output
+except ImportError:
+    def clear_output(wait=False):
+        pass
 import tensorflow as tf
 from scipy.interpolate import griddata
 from mpl_toolkits.axes_grid1 import make_axes_locatable

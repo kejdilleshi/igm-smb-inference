@@ -17,6 +17,13 @@ Like data_assimilation, the full optimization loop runs within initialize().
 """
 
 import os
+import sys
+
+# When loaded by IGM's SourceFileLoader, this file is registered as module
+# 'smb_inference', shadowing the actual package. Set __path__ and __package__
+# so that sub-package imports (smb_inference.core, etc.) resolve correctly.
+__path__ = [os.path.dirname(os.path.abspath(__file__))]
+__package__ = "smb_inference"
 
 import tensorflow as tf
 import numpy as np

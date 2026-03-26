@@ -12,6 +12,7 @@ core:
     visible_gpus: [0]
 
 defaults:
+  - /user/conf/processes@processes.smb_inference: smb_inference
   - override /inputs:
     - local
   - override /processes:
