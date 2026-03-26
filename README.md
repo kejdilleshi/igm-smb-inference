@@ -51,9 +51,37 @@ defaults:
 
 ## Requirements
 
-- IGM (installed and importable)
+- **IGM at commit `39702c3`** (v3.1.1 + 121 commits) — see pinning instructions below
 - TensorFlow >= 2.x
 - NumPy, SciPy, matplotlib, netCDF4
+
+### Pinning IGM to the correct version
+
+This module was developed and tested against a specific IGM commit. To ensure reproducibility, install IGM from source at that exact commit:
+
+```bash
+pip install git+https://github.com/instructed-glacier-model/igm.git@39702c3
+```
+
+Or, if you prefer a local editable install:
+
+```bash
+git clone https://github.com/instructed-glacier-model/igm.git
+cd igm
+git checkout 39702c3
+pip install -e .
+```
+
+If you already have IGM installed from source, navigate to your local clone and switch to the required commit:
+
+```bash
+cd /path/to/igm
+git fetch origin
+git checkout 39702c3
+pip install -e .
+```
+
+> **Note**: Using a different IGM version may cause breaking changes in internal APIs (`igm.processes.iceflow`, `igm.utils.grad`, etc.) that this module depends on.
 
 ## Configuration
 
