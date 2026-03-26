@@ -11,81 +11,21 @@ A user module for [IGM (Instructed Glacier Model)](https://igm-model.org/) that 
    - Minimizes MAE between simulated and observed thickness plus a curvature regularization term.
    - Uses Adam optimizer; supports early stopping and periodic emulator retraining.
 
-## Installation
-
-### 1. Clone into your experiment's user module directory
-
-IGM discovers user modules from the `user/code/processes/` directory relative to your experiment working directory.
+## Usage
 
 ```bash
-cd /path/to/your/experiment
-mkdir -p user/code/processes
-cd user/code/processes
-git clone https://github.com/<your-username>/igm-smb-inference smb_inference
+igm_run +experiment=params
 ```
 
-> **Important**: The clone target folder **must** be named `smb_inference` (matching the module name).
-
-### 2. Copy the Hydra config
-
-IGM needs the process config YAML in the Hydra search path:
+See `experiment/params.yaml` for the full configuration. An alternative experiment using a pretrained CNN emulator is available:
 
 ```bash
-cd /path/to/your/experiment
-mkdir -p user/conf/processes
-cp user/code/processes/smb_inference/smb_inference.yaml user/conf/processes/
+igm_run +experiment=params_pretrained
 ```
-
-### 3. Add to your experiment config
-
-In your experiment's `params.yaml`:
-
-```yaml
-defaults:
-  - override /processes:
-    - time
-    - iceflow
-    - data_assimilation
-    - smb_inference          # <-- add this
-```
-
-## Requirements
-
-- **IGM at commit `39702c3`** (v3.1.1 + 121 commits) — see pinning instructions below
-- TensorFlow >= 2.x
-- NumPy, SciPy, matplotlib, netCDF4
-
-### Pinning IGM to the correct version
-
-This module was developed and tested against a specific IGM commit. To ensure reproducibility, install IGM from source at that exact commit:
-
-```bash
-pip install git+https://github.com/instructed-glacier-model/igm.git@39702c3
-```
-
-Or, if you prefer a local editable install:
-
-```bash
-git clone https://github.com/instructed-glacier-model/igm.git
-cd igm
-git checkout 39702c3
-pip install -e .
-```
-
-If you already have IGM installed from source, navigate to your local clone and switch to the required commit:
-
-```bash
-cd /path/to/igm
-git fetch origin
-git checkout 39702c3
-pip install -e .
-```
-
-> **Note**: Using a different IGM version may cause breaking changes in internal APIs (`igm.processes.iceflow`, `igm.utils.grad`, etc.) that this module depends on.
 
 ## Configuration
 
-All parameters are in `smb_inference.yaml` and accessed via `cfg.processes.smb_inference`. Key settings:
+All parameters are in `user/conf/processes/smb_inference.yaml` and accessed via `cfg.processes.smb_inference`. Key settings:
 
 | Parameter | Default | Description |
 |---|---|---|
@@ -98,48 +38,28 @@ All parameters are in `smb_inference.yaml` and accessed via `cfg.processes.smb_i
 | `optimization.learning_rate` | 0.05 | Adam learning rate |
 | `optimization.regularisation` | 0.05 | Curvature regularization weight |
 
-See `smb_inference.yaml` for the full parameter list.
-
 ## Directory structure
 
 ```
 igm-smb-inference/
-├── smb_inference/              # Python package (must match module name)
-│   ├── __init__.py             # Exports initialize/update/finalize
-│   ├── smb_inference.py        # Main entry point
-│   ├── core/
-│   │   ├── glacier.py          # GlacierDynamicsCheckpointed model
-│   │   ├── smb.py              # SMB computation (profile, PDD, ELA)
-│   │   ├── inversion.py        # Loss functions and metrics
-│   │   ├── climate.py          # Lapse rates, PDD sums
-│   │   ├── load_pinn.py        # PINN/FNO2 emulator loading
-│   │   └── forward_schemes/    # Differentiable emulator steps
-│   ├── data/                   # Data loading (NetCDF)
-│   ├── utils/                  # Numerical tools (flux divergence, etc.)
-│   ├── visualization/          # Plotting
-│   └── config/                 # Config parsing
-├── smb_inference.yaml          # Hydra config (copy to user/conf/processes/)
+├── experiment/
+│   ├── params.yaml              # DA + SMB inference experiment
+│   └── params_pretrained.yaml   # Pretrained CNN experiment
+├── user/
+│   ├── code/processes/smb_inference/   # Python package
+│   │   ├── __init__.py                 # Exports initialize/update/finalize
+│   │   ├── smb_inference.py            # Main entry point
+│   │   ├── core/                       # Glacier model, SMB, inversion, climate
+│   │   ├── data/                       # Data loading (NetCDF)
+│   │   ├── utils/                      # Numerical tools (flux divergence, etc.)
+│   │   ├── visualization/              # Plotting
+│   │   └── config/                     # Config parsing
+│   └── conf/processes/
+│       └── smb_inference.yaml          # Hydra config (default parameters)
+├── data/
+│   └── input.nc
 └── README.md
 ```
-
-## How IGM discovers this module
-
-IGM's module loader ([`loader.py`](https://github.com/instructed-glacier-model/igm)) searches for user process modules in:
-
-1. `.smb_inference.py` (local directory)
-2. `user/code/processes/smb_inference.py` (flat file)
-3. `user/code/processes/smb_inference/smb_inference.py` (package) ← **this is how it works**
-
-The `user/code/processes/` directory is added to `sys.path`, so internal imports like `from smb_inference.core.glacier import ...` resolve correctly.
-
-## IGM dependencies
-
-This module depends on the following IGM internals (which are available when IGM is installed):
-
-- `igm.processes.iceflow` — emulator infrastructure, vertical discretization, solver
-- `igm.utils.grad` — slope-limited flux divergence
-- `igm.utils.math` — precision utilities
-- `igm.inputs` — IGM input handling
 
 ## License
 
