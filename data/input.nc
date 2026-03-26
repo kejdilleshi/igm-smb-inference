@@ -1,0 +1,1 @@
+/home/klleshi/igm/experiments/DA_GJ/aletsch/data/input.nc
