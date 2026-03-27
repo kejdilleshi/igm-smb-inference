@@ -9,6 +9,6 @@ build/
 .DS_Store
 *.npy
 *.h5
-# *.nc
+*.nc
 results/
 outputs/

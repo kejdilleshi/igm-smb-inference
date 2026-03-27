@@ -2,18 +2,14 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-try:
-    from IPython.display import clear_output
-except ImportError:
-    def clear_output(wait=False):
-        pass
+from IPython.display import clear_output
 import tensorflow as tf
 from scipy.interpolate import griddata
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import os
 from matplotlib import colors
 from matplotlib.lines import Line2D
-from smb_inference.utils.emulator_tools import compute_divflux
+from igm.processes.smb_inference.utils.emulator_tools import compute_divflux
 
 
 def to_numpy(tensor):

@@ -17,23 +17,16 @@ Like data_assimilation, the full optimization loop runs within initialize().
 """
 
 import os
-import sys
-
-# When loaded by IGM's SourceFileLoader, this file is registered as module
-# 'smb_inference', shadowing the actual package. Set __path__ and __package__
-# so that sub-package imports (smb_inference.core, etc.) resolve correctly.
-__path__ = [os.path.dirname(os.path.abspath(__file__))]
-__package__ = "smb_inference"
 
 import tensorflow as tf
 import numpy as np
 
-from smb_inference.core.glacier import GlacierDynamicsCheckpointed
-from smb_inference.core.inversion import _eval_pair
-from smb_inference.core.smb import update_smb_profile
-from smb_inference.data.loader import load_observations_from_nc
-from smb_inference.visualization.plots import plot_loss_components
-from smb_inference.config.read_config import Config
+from igm.processes.smb_inference.core.glacier import GlacierDynamicsCheckpointed
+from igm.processes.smb_inference.core.inversion import _eval_pair
+from igm.processes.smb_inference.core.smb import update_smb_profile
+from igm.processes.smb_inference.data.loader import load_observations_from_nc
+from igm.processes.smb_inference.visualization.plots import plot_loss_components
+from igm.processes.smb_inference.config.read_config import Config
 
 
 # ─── Helper functions ────────────────────────────────────────────────────────
@@ -54,138 +47,6 @@ def _get_dx_dy(cfg, state):
         dy = float(smb_cfg.physics.dy)
 
     return dx, dy
-
-
-def _load_emulator(smb_cfg, state, dx, cfg):
-    """Load the ice flow emulator from state or from disk.
-
-    The emulator and its normalization are always handled by IGM's own
-    infrastructure (iceflow module).
-
-    Returns
-    -------
-    model, V_bar, Nz, input_fields
-        input_fields is None when inheriting from state (PINN path),
-        or a list of str when loading a pretrained CNN from an artifact dir.
-    """
-    em_cfg = smb_cfg.emulator
-    use_state = getattr(em_cfg, "from_state", False)
-
-    if use_state:
-        if not hasattr(state, "iceflow_model") or state.iceflow_model is None:
-            raise ValueError(
-                "[smb_inference] emulator.from_state=true but state.iceflow_model "
-                "is not available. Run data_assimilation or iceflow first."
-            )
-        model = state.iceflow_model
-        V_bar = state.iceflow.discr_v.V_bar
-        nz = int(V_bar.shape[0])
-        print(f"[smb_inference] Using emulator from state (Nz={nz})")
-        return model, V_bar, nz, None
-
-    # Resolve model_path relative to original working directory
-    model_path = em_cfg.model_path
-    if not os.path.isabs(model_path) and hasattr(state, "original_cwd"):
-        resolved = os.path.join(str(state.original_cwd), model_path)
-        if os.path.exists(resolved):
-            model_path = resolved
-
-    # Check if this is a pretrained artifact (has manifest.yaml)
-    manifest_path = os.path.join(model_path, "manifest.yaml")
-    if os.path.exists(manifest_path):
-        return _load_pretrained_artifact(model_path, cfg)
-
-    # Fall back to PINN loading
-    from smb_inference.core.load_pinn import load_pinn_emulator
-
-    nz = getattr(em_cfg, "Nz", 4)
-    model, _, V_bar = load_pinn_emulator(
-        artifact_dir=model_path,
-        Nz=nz,
-    )
-    print(f"[smb_inference] Loaded PINN emulator from {model_path}")
-    return model, V_bar, nz, None
-
-
-def _load_pretrained_artifact(artifact_dir, cfg):
-    """Load a pretrained emulator using IGM's artifact loading infrastructure.
-
-    Reads the manifest first and temporarily adjusts the iceflow numerics
-    in cfg so that load_emulator_artifact's strict validation passes
-    (it requires Nz, basis_vertical, basis_horizontal to match the artifact).
-
-    Returns model, V_bar, Nz, input_fields.
-    """
-    import yaml
-    from omegaconf import open_dict
-    from igm.processes.iceflow.emulate.utils.artifacts import load_emulator_artifact
-    from igm.processes.iceflow.emulate.utils.artifacts_schema_v3 import parse_manifest_v3
-
-    # Parse manifest to learn what the artifact expects
-    manifest_path = os.path.join(artifact_dir, "manifest.yaml")
-    with open(manifest_path) as f:
-        raw = yaml.safe_load(f)
-    manifest = parse_manifest_v3(raw)
-
-    # Temporarily set iceflow numerics to match the artifact
-    with open_dict(cfg):
-        numerics = cfg.processes.iceflow.numerics
-        orig_nz = numerics.Nz
-        orig_basis_v = numerics.basis_vertical
-        orig_basis_h = numerics.basis_horizontal
-
-        numerics.Nz = manifest.Nz
-        numerics.basis_vertical = manifest.basis_vertical
-        numerics.basis_horizontal = manifest.basis_horizontal
-
-    try:
-        model, manifest = load_emulator_artifact(artifact_dir, cfg)
-    finally:
-        # Restore original numerics
-        with open_dict(cfg):
-            numerics = cfg.processes.iceflow.numerics
-            numerics.Nz = orig_nz
-            numerics.basis_vertical = orig_basis_v
-            numerics.basis_horizontal = orig_basis_h
-
-    nz = manifest.Nz
-    input_fields = list(manifest.inputs)
-
-    # Compute V_bar from the appropriate vertical discretization
-    # Build a minimal cfg for the vertical discretization constructor
-    from omegaconf import OmegaConf
-    vert_cfg = OmegaConf.create({
-        'processes': {
-            'iceflow': {
-                'numerics': {
-                    'Nz': nz,
-                    'vert_spacing': 1.0,
-                    'precision': str(cfg.processes.iceflow.numerics.precision),
-                    'basis_vertical': manifest.basis_vertical,
-                    'basis_horizontal': manifest.basis_horizontal,
-                },
-                'physics': {
-                    'exp_glen': 3,
-                },
-            }
-        }
-    })
-
-    basis = manifest.basis_vertical.lower()
-    if basis == "molho":
-        from igm.processes.iceflow.vertical.vertical_molho import MOLHODiscr
-        discr = MOLHODiscr(vert_cfg)
-    else:
-        from igm.processes.iceflow.vertical.vertical_lagrange import LagrangeDiscr
-        discr = LagrangeDiscr(vert_cfg)
-
-    V_bar = discr.V_bar
-
-    print(
-        f"[smb_inference] Loaded pretrained emulator: "
-        f"inputs={input_fields}, Nz={nz}, basis={basis}"
-    )
-    return model, V_bar, nz, input_fields
 
 
 def _load_observation(smb_cfg, state, topg):
@@ -272,10 +133,11 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
     log_freq = max(1, opt_cfg.nbitmax // 50) # Log ~10 times during optimization
 
     retrain_freq = getattr(opt_cfg, 'retrain_emulator_freq', 20)
+    early_retrain_iters = getattr(opt_cfg, 'early_retrain_iters', 5)
 
     for i in range(opt_cfg.nbitmax):
-        # Retrain emulator on first iteration and every retrain_freq iterations
-        if i == 0 or (retrain_freq > 0 and i % 200 == 0):
+        # Retrain every iteration for the first early_retrain_iters, then every retrain_freq
+        if i < early_retrain_iters or (retrain_freq > 0 and i % retrain_freq == 0):
             glacier_model(
                 precip_tensor=None,
                 T_m_lowest=None,
@@ -354,6 +216,7 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
 
 # ─── IGM process interface ───────────────────────────────────────────────────
 
+from igm.processes.iceflow import initialize as iceflow_initialize
 
 def initialize(cfg, state):
     """
@@ -363,6 +226,8 @@ def initialize(cfg, state):
     initialize(). The optimized SMB parameters and resulting glacier
     state are stored back into the IGM state object.
     """
+    iceflow_initialize(cfg, state) # initialize the iceflow model
+
     smb_cfg = cfg.processes.smb_inference
 
     # ── 1. Read data from IGM state ──────────────────────────────────────
@@ -387,7 +252,7 @@ def initialize(cfg, state):
         print("[smb_inference] Emulator inherited from state.iceflow_model")
         model, V_bar, Nz, input_fields = None, None, None, None
     else:
-        model, V_bar, Nz, input_fields = _load_emulator(smb_cfg, state, dx, cfg)
+        print("[smb_inference] Emulaotor not found on state")
 
     # ── 3. Build glacier dynamics model ──────────────────────────────────
     args = Config(

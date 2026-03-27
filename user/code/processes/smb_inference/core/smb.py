@@ -1,4 +1,4 @@
-from smb_inference.core.climate import (
+from igm.processes.smb_inference.core.climate import (
     apply_lapse_rate, compute_negative_temperature_ratio,
     compute_integral_positive_temperature, accumulation_from_daily,
     pdd_sum_daily, apply_lapse_rate_daily

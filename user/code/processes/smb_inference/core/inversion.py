@@ -22,7 +22,7 @@ def _mask(x: tf.Tensor, thresh: float) -> tf.Tensor:
     return tf.sigmoid(scale * (x - 1))
 
 
-def _eval_pair(H: tf.Tensor, obs: tf.Tensor, thickness_thresh: float = 0.5):
+def _eval_pair(H: tf.Tensor, obs: tf.Tensor, thickness_thresh: float = 1.0):
     """
     Compute masked residual diagnostics between simulation and observation.
 
