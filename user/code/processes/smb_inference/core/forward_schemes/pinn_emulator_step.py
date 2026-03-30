@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from igm.utils.grad.compute_divflux_slope_limiter import compute_divflux_slope_limiter
-from igm.processes.smb_inference.utils.emulator_tools import apply_boundary_condition_tf
+from utils.emulator_tools import apply_boundary_condition_tf
 
 
 def make_pinn_emulator_step(model, V_bar, Nz, dx_value):

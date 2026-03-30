@@ -1,12 +1,12 @@
 from igm import inputs
 from igm.processes.iceflow.unified.mappings import mapping
 from igm.processes.iceflow.unified.optimizers import optimizer
-from igm.processes.smb_inference.core.smb import update_smb_PDD, update_smb_ELA, update_smb_profile, cosine_temperature_series
-from igm.processes.smb_inference.visualization.plots import visualize, visualize_velocities, plot_thickness_divflux_velocities
+from core.smb import update_smb_PDD, update_smb_ELA, update_smb_profile, cosine_temperature_series
+from visualization.plots import visualize, visualize_velocities, plot_thickness_divflux_velocities
 import tensorflow as tf
 import warnings
-from igm.processes.smb_inference.core.forward_schemes.pinn_emulator_step import make_pinn_emulator_step
-from igm.processes.smb_inference.core.forward_schemes.pretrained_cnn_step import make_pretrained_cnn_step
+from core.forward_schemes.pinn_emulator_step import make_pinn_emulator_step
+from core.forward_schemes.pretrained_cnn_step import make_pretrained_cnn_step
 from igm.processes.iceflow.unified.solver.solver import solve_iceflow
 
 class GlacierDynamicsCheckpointed(tf.keras.Model):
@@ -124,10 +124,10 @@ class GlacierDynamicsCheckpointed(tf.keras.Model):
 
         saved_it = getattr(self.state, 'it', 0)
         self.state.it = max(int(saved_it), 1)
-        solve_iceflow(self.cfg, self.state)
+        solve_iceflow(self.cfg, self.state, init=True)
         self.state.it = saved_it
         # if hasattr(self.state, 'cost') and len(self.state.cost) > 0:
-            # print(f"[smb_inference] Retrained emulator, cost={self.state.cost[-1]}")
+        #     print(f"[smb_inference] Retrained emulator, cost={self.state.cost}")
 
     def solve_glacier_dynamics_differentiable(self, Z_topo, ttot, time, smb_vec, z_min, dz,
                                                retrain_mode=False):

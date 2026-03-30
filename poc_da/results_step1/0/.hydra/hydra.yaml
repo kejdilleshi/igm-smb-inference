@@ -130,7 +130,7 @@ hydra:
   runtime:
     version: 1.3.2
     version_base: '1.3'
-    cwd: /home/klleshi/igm/experiments/poc_da
+    cwd: /home/klleshi/igm-smb-inference/poc_da
     config_sources:
     - path: hydra.conf
       schema: pkg
@@ -138,13 +138,13 @@ hydra:
     - path: igm.conf
       schema: pkg
       provider: main
-    - path: //home/klleshi/igm/experiments/poc_da
+    - path: //home/klleshi/igm-smb-inference/poc_da
       schema: file
       provider: hydra.searchpath in main
     - path: ''
       schema: structured
       provider: schema
-    output_dir: /home/klleshi/igm/experiments/poc_da/results_step1/0
+    output_dir: /home/klleshi/igm-smb-inference/poc_da/results_step1/0
     choices:
       experiment: params
       outputs: null

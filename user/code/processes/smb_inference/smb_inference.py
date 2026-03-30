@@ -17,16 +17,24 @@ Like data_assimilation, the full optimization loop runs within initialize().
 """
 
 import os
+import sys
 
 import tensorflow as tf
 import numpy as np
 
-from igm.processes.smb_inference.core.glacier import GlacierDynamicsCheckpointed
-from igm.processes.smb_inference.core.inversion import _eval_pair
-from igm.processes.smb_inference.core.smb import update_smb_profile
-from igm.processes.smb_inference.data.loader import load_observations_from_nc
-from igm.processes.smb_inference.visualization.plots import plot_loss_components
-from igm.processes.smb_inference.config.read_config import Config
+# IGM loads this file directly via SourceFileLoader (not as a package), so
+# relative imports don't work. Add the smb_inference/ directory to sys.path
+# so sub-modules can be imported by their package-relative names.
+_smb_pkg_dir = os.path.dirname(os.path.abspath(__file__))
+if _smb_pkg_dir not in sys.path:
+    sys.path.insert(0, _smb_pkg_dir)
+
+from core.glacier import GlacierDynamicsCheckpointed
+from core.inversion import _eval_pair
+from core.smb import update_smb_profile
+from data.loader import load_observations_from_nc
+from visualization.plots import plot_loss_components
+from config.read_config import Config
 
 
 # ─── Helper functions ────────────────────────────────────────────────────────

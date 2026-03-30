@@ -9,7 +9,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import os
 from matplotlib import colors
 from matplotlib.lines import Line2D
-from igm.processes.smb_inference.utils.emulator_tools import compute_divflux
+from utils.emulator_tools import compute_divflux
 
 
 def to_numpy(tensor):
