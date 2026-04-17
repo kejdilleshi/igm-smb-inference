@@ -61,6 +61,50 @@ igm-smb-inference/
 └── README.md
 ```
 
+## Parameter Sweep (Optuna)
+
+An exhaustive grid search over SMB inference hyperparameters using Optuna, with a live Dash dashboard to visualise results.
+
+### Sweep parameters
+
+| Parameter | Values | Count |
+|---|---|---|
+| `nb_layers` | 10, 12 | 2 |
+| `nb_out_filter` | 32, 64 | 2 |
+| `learning_rate` | 0.01, 0.1, 1.0 | 3 |
+| `regularisation` | 1e-5, 1e-3 | 2 |
+| `retrain_emulator_freq` | 5, 10, 20 | 3 |
+| **Total** | | **72 trials** |
+
+### Running the sweep
+
+```bash
+# Terminal 1 (tmux): run the sweep
+conda activate igm
+cd ~/Documents/igm-smb-inference
+python optuna_sweep.py
+```
+
+Each trial calls `igm_run +experiment=params` with Hydra overrides. Results are saved to `sweep_results/trial_XXXX/smb_inference/` (loss history, SMB profile, thickness fields). The study is persisted in SQLite (`sweep_results/optuna_study.db`) and resumes automatically if interrupted.
+
+### Dashboard
+
+```bash
+# Terminal 2: launch the dashboard
+conda activate igm
+pip install dash plotly pandas   # one-time
+python dashboard.py
+# open http://localhost:8050
+```
+
+The dashboard auto-refreshes every 30 seconds and provides:
+
+- **Loss curves overlaid** — all trials on one plot, coloured by any sweep parameter
+- **Parameter importance** — ANOVA-based ranking of which parameters affect the loss most
+- **Box plots** — each parameter vs final loss
+- **Parallel coordinates** — full hyperparameter space visualisation
+- **Top-10 table** — best trials ranked by loss
+
 ## License
 
 GNU GPL v3 (same as IGM)

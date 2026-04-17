@@ -21,6 +21,9 @@ import sys
 
 import tensorflow as tf
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 # IGM loads this file directly via SourceFileLoader (not as a package), so
 # relative imports don't work. Add the smb_inference/ directory to sys.path
@@ -32,7 +35,7 @@ if _smb_pkg_dir not in sys.path:
 from core.glacier import GlacierDynamicsCheckpointed
 from core.inversion import _eval_pair
 from core.smb import update_smb_profile
-from data.loader import load_observations_from_nc
+from data.loader import load_observations_from_nc, load_smb_point_obs
 from visualization.plots import plot_loss_components
 from config.read_config import Config
 
@@ -42,17 +45,17 @@ from config.read_config import Config
 
 def _get_dx_dy(cfg, state):
     """Compute grid spacing from state coordinates, with config fallback."""
-    smb_cfg = cfg.processes.smb_inference
+    iceflow_physics = cfg.processes.iceflow.physics
 
     if hasattr(state, "x") and state.x is not None and len(state.x) > 1:
         dx = float(state.x[1] - state.x[0])
     else:
-        dx = float(smb_cfg.physics.dx)
+        dx = float(iceflow_physics.get("dx", 100.0))
 
     if hasattr(state, "y") and state.y is not None and len(state.y) > 1:
         dy = float(state.y[1] - state.y[0])
     else:
-        dy = float(smb_cfg.physics.dy)
+        dy = float(iceflow_physics.get("dy", 100.0))
 
     return dx, dy
 
@@ -61,7 +64,7 @@ def _load_observation(smb_cfg, state, topg):
     """Load the observation target for inversion."""
     obs_cfg = smb_cfg.observations
 
-    if obs_cfg.geology_file:
+    if getattr(obs_cfg, "geology_file", ""):
         obs_years = list(obs_cfg.observation_years)
         obs = load_observations_from_nc(obs_cfg.geology_file, topg, obs_years)
         target_key = obs_years[-1]
@@ -75,8 +78,19 @@ def _load_observation(smb_cfg, state, topg):
     # Use a state variable as observation target
     source = getattr(obs_cfg, "state_variable", "thk")
     if hasattr(state, source) and getattr(state, source) is not None:
-        observation = tf.cast(getattr(state, source), tf.float32)
-        print(f"[smb_inference] Using state.{source} as observation target")
+        raw = tf.cast(getattr(state, source), tf.float32)
+
+        # If the observation is a surface elevation, convert to thickness
+        if source in ("usurfinfer", "usurfobs", "usurf"):
+            observation = raw - topg
+            print(
+                f"[smb_inference] Using state.{source} as observation target "
+                f"(converted to thickness via {source} - topg)"
+            )
+        else:
+            observation = raw
+            print(f"[smb_inference] Using state.{source} as observation target")
+
         return observation, None
     else:
         raise ValueError(
@@ -86,7 +100,7 @@ def _load_observation(smb_cfg, state, topg):
         )
 
 
-def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ice_mask):
+def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ice_mask, outdir=None):
     """
     Optimize a 1D elevation-dependent SMB profile to match observed thickness.
 
@@ -108,10 +122,15 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
     inv_cfg = smb_cfg.inversion
     opt_cfg = smb_cfg.optimization
 
-    # Elevation range for profile discretization
+    # Elevation range for profile discretization. Restrict to on-glacier
+    # pixels — off-glacier terrain (outside ice_mask) can extend well above
+    # or below the glacier and would otherwise inflate N_bins with bins
+    # that never see any ice.
     Z_surf = topg + H_init
-    z_min = tf.reduce_min(Z_surf)
-    z_max = tf.reduce_max(Z_surf)
+    on_ice = ice_mask > 0.5
+    Z_on = tf.boolean_mask(Z_surf, on_ice)
+    z_min = tf.reduce_min(Z_on)
+    z_max = tf.reduce_max(Z_on)
     dz = tf.constant(float(inv_cfg.dz), dtype=tf.float32)
     N_bins = int(tf.math.ceil((z_max - z_min) / dz).numpy()) + 1
 
@@ -140,24 +159,62 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
 
     log_freq = max(1, opt_cfg.nbitmax // 50) # Log ~10 times during optimization
 
+    smb_vec_dir = None
+    if outdir is not None:
+        smb_vec_dir = os.path.join(outdir, "smb_vec_iters")
+        os.makedirs(smb_vec_dir, exist_ok=True)
+
     retrain_freq = getattr(opt_cfg, 'retrain_emulator_freq', 20)
     early_retrain_iters = getattr(opt_cfg, 'early_retrain_iters', 5)
 
+    # Optional: overlay stake SMB observations on per-iter profile plots.
+    # CSV has columns X, Y, Alt, Annual_SMB (m w.e.). We ignore X/Y and
+    # convert to m ice eq./yr (divide by rho_ice=0.917) so it matches the
+    # smb_vec axis.
+    obs_alts, obs_smb = None, None
+    smb_points_file = getattr(smb_cfg.observations, "smb_points_file", "") or ""
+    if smb_points_file and os.path.exists(smb_points_file):
+        try:
+            obs_alts, obs_smb = load_smb_point_obs(smb_points_file)
+            print(f"[smb_inference] Loaded {len(obs_alts)} SMB stake points "
+                  f"from {smb_points_file}")
+        except Exception as e:
+            print(f"[smb_inference] Could not load {smb_points_file}: {e}")
+
     for i in range(opt_cfg.nbitmax):
-        # Retrain every iteration for the first early_retrain_iters, then every retrain_freq
-        if i < early_retrain_iters or (retrain_freq > 0 and i % retrain_freq == 0):
-            glacier_model(
-                precip_tensor=None,
-                T_m_lowest=None,
-                T_s=None,
-                melt_factor=None,
-                smb_method="profile",
-                smb_vec=smb_vec,
-                z_min=z_min,
-                dz=dz,
-                retrain_mode=True,
-            )
-            print(f"[smb_inference] Emulator retrained at iteration {i + 1}")
+        # # Retrain every iteration for the first early_retrain_iters, then every retrain_freq
+        # if i < early_retrain_iters or (retrain_freq > 0 and i % retrain_freq == 0):
+        #     glacier_model(
+        #         precip_tensor=None,
+        #         T_m_lowest=None,
+        #         T_s=None,
+        #         melt_factor=None,
+        #         smb_method="profile",
+        #         smb_vec=smb_vec,
+        #         z_min=z_min,
+        #         dz=dz,
+        #         retrain_mode=True,
+        #     )
+        #     print(f"[smb_inference] Emulator retrained at iteration {i + 1}")
+
+        if smb_vec_dir is not None:
+            z_axis = float(z_min) + float(dz) * np.arange(smb_vec.shape[0])
+            fig, ax = plt.subplots(figsize=(5, 8))
+            ax.plot(smb_vec.numpy(), z_axis, "-o", markersize=3, label="profile")
+            if obs_alts is not None:
+                ax.scatter(obs_smb, obs_alts, s=18, c="tab:red", alpha=0.7,
+                           edgecolors="k", linewidths=0.4, zorder=5,
+                           label="stakes (m ice eq./yr)")
+                ax.legend(loc="best", fontsize=8)
+            ax.axvline(0.0, color="k", linewidth=0.5)
+            ax.set_xlabel("SMB (m ice eq./yr)")
+            ax.set_ylabel("Elevation (m)")
+            ax.set_title(f"SMB profile — iter {i + 1}")
+            ax.grid(True, alpha=0.3)
+            fig.tight_layout()
+            fig.savefig(os.path.join(smb_vec_dir, f"smb_vec_iter_{i + 1:04d}.png"), dpi=100)
+            plt.close(fig)
+
 
         with tf.GradientTape() as tape:
             # Forward glacier simulation (differentiable, tf.while_loop)
@@ -175,7 +232,7 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
 
             # Data fidelity
             metrics = _eval_pair(H_sim, observation)
-            data_term = metrics["mae"]
+            data_term = metrics["rmse"]
 
             # Regularization: penalize curvature of SMB profile
             if reg_lambda > 0 and smb_vec.shape[0] > 2:
@@ -201,7 +258,7 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
             )
 
         # Early stopping
-        if i > 1 and opt_cfg.early_stop_patience > 0:
+        if i > 10 and opt_cfg.early_stop_patience > 0:
             if best_loss - loss_val > opt_cfg.early_stop_threshold:
                 best_loss = loss_val
                 no_improve_count = 0
@@ -215,7 +272,7 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
                 )
                 break
 
-            if loss_val <= opt_cfg.loss_threshold:
+            if loss_val <= getattr(opt_cfg, "loss_threshold", 1.0e-4):
                 print(f"[smb_inference] Loss threshold reached at iteration {i + 1}")
                 break
 
@@ -258,9 +315,17 @@ def initialize(cfg, state):
     has_state_model = hasattr(state, 'iceflow_model') and state.iceflow_model is not None
     if has_state_model:
         print("[smb_inference] Emulator inherited from state.iceflow_model")
-        model, V_bar, Nz, input_fields = None, None, None, None
+        # Detect input_fields from the iceflow config (pretrained CNN manifest)
+        iceflow_cfg = cfg.processes.iceflow
+        input_fields = list(getattr(iceflow_cfg.unified, 'inputs', []))
+        if input_fields:
+            print(f"[smb_inference] Using pretrained CNN with inputs: {input_fields}")
+        else:
+            input_fields = None
+        model, V_bar, Nz = None, None, None
     else:
-        print("[smb_inference] Emulaotor not found on state")
+        print("[smb_inference] Emulator not found on state")
+        model, V_bar, Nz, input_fields = None, None, None, None
 
     # ── 3. Build glacier dynamics model ──────────────────────────────────
     args = Config(
@@ -268,9 +333,9 @@ def initialize(cfg, state):
         t_start=float(smb_cfg.t_start),
         dtmax=float(smb_cfg.dtmax),
         cfl=float(smb_cfg.cfl),
-        rho=float(smb_cfg.physics.rho),
-        g=float(smb_cfg.physics.g),
-        fd=float(smb_cfg.physics.fd),
+        rho=float(cfg.processes.iceflow.physics.ice_density),
+        g=float(cfg.processes.iceflow.physics.gravity_cst),
+        fd=0.25e-16,
         dx=dx,
         dy=dy,
         vis_freq=float(smb_cfg.output.vis_freq),
@@ -297,9 +362,12 @@ def initialize(cfg, state):
     method = smb_cfg.inversion.method
 
     if method == "profile":
+        outdir = smb_cfg.output.outdir
+        os.makedirs(outdir, exist_ok=True)
         H_sim, smb_vec, z_min, dz, loss_history, data_history = (
             _run_profile_inversion(
                 smb_cfg, glacier_model, observation, topg, H_init, ice_mask,
+                outdir=outdir,
             )
         )
 
@@ -341,6 +409,10 @@ def initialize(cfg, state):
         np.save(os.path.join(outdir, "loss_history.npy"), np.array(loss_history))
         if hasattr(state, "smb_vec"):
             np.save(os.path.join(outdir, "smb_vec.npy"), state.smb_vec.numpy())
+        if hasattr(state, "smb_z_min"):
+            np.save(os.path.join(outdir, "z_min.npy"), np.array(float(state.smb_z_min)))
+        if hasattr(state, "smb_dz"):
+            np.save(os.path.join(outdir, "dz.npy"), np.array(float(state.smb_dz)))
         if hasattr(state, "smb") and state.smb is not None:
             np.save(os.path.join(outdir, "smb_field.npy"), state.smb.numpy())
             np.save(os.path.join(outdir, "smb_profile.npy"), smb_vec.numpy())

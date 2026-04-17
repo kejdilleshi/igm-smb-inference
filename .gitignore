@@ -10,7 +10,11 @@ build/
 *.npy
 *.h5
 *.nc
+*.bak
 results/
 outputs/
 vtp/
-
+*.tif
+*.xml
+sweep_result*
+outputs/

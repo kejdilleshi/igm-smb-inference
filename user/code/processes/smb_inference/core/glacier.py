@@ -146,13 +146,13 @@ class GlacierDynamicsCheckpointed(tf.keras.Model):
         if self.state is not None and hasattr(self.state, 'arrhenius') and self.state.arrhenius is not None:
             arrhenius_field = tf.cast(self.state.arrhenius, tf.float32)
         else:
-            init_arr = float(self.cfg.processes.smb_inference.physics.init_arrhenius)
+            init_arr = float(self.cfg.processes.iceflow.physics.init_arrhenius)
             arrhenius_field = tf.ones_like(H_ice) * init_arr
 
         if self.state is not None and hasattr(self.state, 'slidingco') and self.state.slidingco is not None:
             slidingco_field = tf.cast(self.state.slidingco, tf.float32)
         else:
-            init_sc = float(self.cfg.processes.smb_inference.physics.init_slidingco)
+            init_sc = float(self.cfg.processes.iceflow.physics.init_slidingco)
             slidingco_field = tf.ones_like(H_ice) * init_sc
 
         # Initial SMB from profile
@@ -243,7 +243,7 @@ class GlacierDynamicsCheckpointed(tf.keras.Model):
                     idx = idx + 1
 
                 # Retrain emulator at specified interval
-                self._retrain_emulator(H_ice, Z_surf)
+                # self._retrain_emulator(H_ice, Z_surf)
                 # if (time_tf - t_last_retrain) >= retrain_interval_tf:
                     # self._retrain_emulator(H_ice, Z_surf)
                     # t_last_retrain = time_tf

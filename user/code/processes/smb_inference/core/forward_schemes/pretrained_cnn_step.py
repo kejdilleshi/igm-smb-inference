@@ -44,11 +44,13 @@ def make_pretrained_cnn_step(model, V_bar, Nz, input_fields):
         cfl = tf.cast(cfl, tf.float32)
 
         # Build input channels in manifest order
+        dX_field = tf.ones_like(H_ice) * dx
         channel_map = {
             'thk': H_ice,
             'usurf': Z_surf,
             'arrhenius': arrhenius_field,
             'slidingco': slidingco_field,
+            'dX': dX_field,
         }
         channels = [channel_map[f] for f in input_fields]
         input_data = tf.stack(channels, axis=-1)

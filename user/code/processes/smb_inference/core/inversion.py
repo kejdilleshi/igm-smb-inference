@@ -48,10 +48,15 @@ def _eval_pair(H: tf.Tensor, obs: tf.Tensor, thickness_thresh: float = 1.0):
     # Using sigmoid for smooth, differentiable masking
     # This mask is NOT a function of H, so gradients flow through H unimpeded
     scale = 1.0  # Steepness of the sigmoid transition
-    soft_mask = tf.sigmoid(scale * (obs - thickness_thresh))
+    # Zero the mask wherever obs is NaN so those pixels never contribute to
+    # cost or gradient. Then sanitize obs to a finite value — NaN * 0 = NaN
+    # in TF, so we must replace NaNs before arithmetic.
+    valid = tf.cast(~tf.math.is_nan(obs), obs.dtype)
+    obs_safe = tf.where(tf.math.is_nan(obs), tf.zeros_like(obs), obs)
+    soft_mask = tf.sigmoid(scale * ((obs_safe - thickness_thresh)* valid)) 
 
     # Compute residuals
-    resid = H - obs
+    resid = H - obs_safe
 
     # Compute weighted metrics using soft mask
     # This preserves gradient flow through H
@@ -366,7 +371,7 @@ def invert_profile(
 
     # Compute data fidelity (masked misfit)
     metrics = _eval_pair(H_sim, observation, thickness_thresh)
-    data_term = metrics["mae"]
+    data_term = metrics["rmse"]
 
     # Smoothness regularization for 1D profile
     if reg_lambda > 0:

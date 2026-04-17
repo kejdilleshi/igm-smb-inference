@@ -13,7 +13,8 @@ emulator:
 # Observation data
 observations:
   geology_file: ''           # Path to NetCDF with observation surfaces (e.g., geology.nc). If empty, uses state variable.
-  state_variable: thk        # State variable to use as observation target when geology_file is empty
+  state_variable: usurfinfer  # State variable to use as observation target when geology_file is empty
+  smb_points_file: ''         # Optional CSV with columns Alt, 'Annual_SMB (m w.e.)'. If set, overlaid as scatter on per-iter SMB profile plots.
   observation_years:
     - surf_1880
     - surf_1926

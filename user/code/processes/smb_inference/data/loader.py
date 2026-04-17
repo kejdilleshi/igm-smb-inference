@@ -127,6 +127,33 @@ def load_daily_data(file_path, accumulate=False):
     return tf.constant(data, dtype=tf.float32), tf.constant(years, dtype=tf.int64)
 
 
+def load_smb_point_obs(path_csv, alt_col="Alt", smb_col="Annual_SMB (m w.e.)",
+                       to_ice_eq=True, rho_ice=0.917):
+    """
+    Load stake SMB observations from a CSV.
+
+    Expected columns: altitude and annual SMB (m w.e./yr). X/Y are ignored.
+    Returns (altitudes, smb_values) as 1D numpy float32 arrays, with SMB
+    converted to m ice eq./yr by default (dividing by rho_ice) so it plots
+    on the same axis as the model's smb_vec.
+    """
+    import csv
+    alts, smbs = [], []
+    with open(path_csv, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                alts.append(float(row[alt_col]))
+                smbs.append(float(row[smb_col]))
+            except (KeyError, ValueError):
+                continue
+    alts = np.asarray(alts, dtype=np.float32)
+    smbs = np.asarray(smbs, dtype=np.float32)
+    if to_ice_eq:
+        smbs = smbs / rho_ice
+    return alts, smbs
+
+
 def load_observations_from_nc(path_nc, topo, years=['surf_1880', 'surf_1926', 'surf_1957',
                                                     'surf_1980', 'surf_1999', 'surf_2009', 'surf_2017']):
     """
