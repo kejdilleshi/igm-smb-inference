@@ -20,6 +20,7 @@ import os
 import sys
 
 import tensorflow as tf
+import tensorflow_probability as tfp
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -141,31 +142,23 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
         dtype=tf.float32,
     )
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=opt_cfg.learning_rate)
     reg_lambda = float(opt_cfg.regularisation)
-
-    loss_history = []
-    data_history = []
-    best_loss = float("inf")
-    no_improve_count = 0
-    H_sim = None
+    optimizer_name = str(getattr(opt_cfg, "optimizer", "adam")).lower()
 
     print(
         f"[smb_inference] Profile inversion: {N_bins} elevation bins, "
         f"z_min={float(z_min):.0f}, z_max={float(z_max):.0f}, dz={float(dz):.0f}"
         f", smb min={float(tf.reduce_min(smb_vec).numpy()):.2f}, "
         f"smb max={float(tf.reduce_max(smb_vec).numpy()):.2f}"
+        f", optimizer={optimizer_name}"
     )
 
-    log_freq = max(1, opt_cfg.nbitmax // 50) # Log ~10 times during optimization
+    log_freq = max(1, opt_cfg.nbitmax // 50) # Log ~50 times during optimization
 
     smb_vec_dir = None
     if outdir is not None:
         smb_vec_dir = os.path.join(outdir, "smb_vec_iters")
         os.makedirs(smb_vec_dir, exist_ok=True)
-
-    retrain_freq = getattr(opt_cfg, 'retrain_emulator_freq', 20)
-    early_retrain_iters = getattr(opt_cfg, 'early_retrain_iters', 5)
 
     # Optional: overlay stake SMB observations on per-iter profile plots.
     # CSV has columns X, Y, Alt, Annual_SMB (m w.e.). We ignore X/Y and
@@ -181,101 +174,170 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
         except Exception as e:
             print(f"[smb_inference] Could not load {smb_points_file}: {e}")
 
-    for i in range(opt_cfg.nbitmax):
-        # # Retrain every iteration for the first early_retrain_iters, then every retrain_freq
-        # if i < early_retrain_iters or (retrain_freq > 0 and i % retrain_freq == 0):
-        #     glacier_model(
-        #         precip_tensor=None,
-        #         T_m_lowest=None,
-        #         T_s=None,
-        #         melt_factor=None,
-        #         smb_method="profile",
-        #         smb_vec=smb_vec,
-        #         z_min=z_min,
-        #         dz=dz,
-        #         retrain_mode=True,
-        #     )
-        #     print(f"[smb_inference] Emulator retrained at iteration {i + 1}")
+    def _save_profile_plot(smb_values, iter_idx):
+        if smb_vec_dir is None:
+            return
+        if (iter_idx - 1) % 5 != 0:
+            return
+        z_axis = float(z_min) + float(dz) * np.arange(smb_values.shape[0])
+        fig, ax = plt.subplots(figsize=(5, 8))
+        ax.plot(smb_values, z_axis, "-o", markersize=3, label="profile")
+        if obs_alts is not None:
+            ax.scatter(obs_smb, obs_alts, s=18, c="tab:red", alpha=0.7,
+                       edgecolors="k", linewidths=0.4, zorder=5,
+                       label="stakes (m ice eq./yr)")
+            if len(obs_alts) >= 2:
+                slope, intercept = np.polyfit(obs_alts, obs_smb, 1)
+                fit_smb = slope * z_axis + intercept
+                resid = obs_smb - (slope * obs_alts + intercept)
+                rmse = float(np.sqrt(np.mean(resid ** 2)))
+                ax.plot(fit_smb, z_axis, color="tab:orange", linewidth=1.5,
+                        label=f"stake fit (RMSE={rmse:.3f})")
+            ax.legend(loc="best", fontsize=8)
+        ax.axvline(0.0, color="k", linewidth=0.5)
+        ax.set_xlabel("SMB (m ice eq./yr)")
+        ax.set_ylabel("Elevation (m)")
+        ax.set_title(f"SMB profile — iter {iter_idx}")
+        ax.grid(True, alpha=0.3)
+        fig.tight_layout()
+        fig.savefig(os.path.join(smb_vec_dir, f"smb_vec_iter_{iter_idx:04d}.png"), dpi=100)
+        plt.close(fig)
 
-        
+    def _compute_loss(x):
+        """Run the forward model and return (total_loss, data_term, H)."""
+        H = glacier_model(
+            precip_tensor=None,
+            T_m_lowest=None,
+            T_s=None,
+            melt_factor=None,
+            smb_method="profile",
+            smb_vec=x,
+            z_min=z_min,
+            dz=dz,
+            retrain_mode=False,
+        )
+        metrics = _eval_pair(H, observation)
+        data_term = metrics["rmse"]
+        if reg_lambda > 0 and x.shape[0] > 2:
+            second_deriv = x[:-2] - 2.0 * x[1:-1] + x[2:]
+            smoothness = tf.reduce_sum(second_deriv ** 2)
+            total = data_term + reg_lambda * smoothness
+        else:
+            total = data_term
+        return total, data_term, H
 
+    loss_history = []
+    data_history = []
+    H_sim = None
 
-        with tf.GradientTape() as tape:
-            # Forward glacier simulation (differentiable, tf.while_loop)
-            H_sim = glacier_model(
-                precip_tensor=None,
-                T_m_lowest=None,
-                T_s=None,
-                melt_factor=None,
-                smb_method="profile",
-                smb_vec=smb_vec,
-                z_min=z_min,
-                dz=dz,
-                retrain_mode=False,
-            )
+    if optimizer_name == "adam":
+        optimizer = tf.keras.optimizers.Adam(learning_rate=opt_cfg.learning_rate)
+        best_loss = float("inf")
+        no_improve_count = 0
 
-            # Data fidelity
-            metrics = _eval_pair(H_sim, observation)
-            data_term = metrics["rmse"]
+        for i in range(opt_cfg.nbitmax):
+            with tf.GradientTape() as tape:
+                loss, data_term, H_sim = _compute_loss(smb_vec)
+            grads = tape.gradient(loss, [smb_vec])
+            optimizer.apply_gradients(zip(grads, [smb_vec]))
 
-            # Regularization: penalize curvature of SMB profile
-            if reg_lambda > 0 and smb_vec.shape[0] > 2:
-                second_deriv = smb_vec[:-2] - 2.0 * smb_vec[1:-1] + smb_vec[2:]
-                smoothness = tf.reduce_sum(second_deriv ** 2)
-                loss = data_term + reg_lambda * smoothness
-            else:
-                loss = data_term
+            loss_val = float(loss.numpy())
+            data_val = float(data_term.numpy())
+            loss_history.append(loss_val)
+            data_history.append(data_val)
 
-        grads = tape.gradient(loss, [smb_vec])
-        optimizer.apply_gradients(zip(grads, [smb_vec]))
-
-        loss_val = float(loss.numpy())
-        data_val = float(data_term.numpy())
-        loss_history.append(loss_val)
-        data_history.append(data_val)
-
-        if i % log_freq == 0 or i == opt_cfg.nbitmax - 1:
-            if smb_vec_dir is not None:
-                z_axis = float(z_min) + float(dz) * np.arange(smb_vec.shape[0])
-                fig, ax = plt.subplots(figsize=(5, 8))
-                ax.plot(smb_vec.numpy(), z_axis, "-o", markersize=3, label="profile")
-                if obs_alts is not None:
-                    ax.scatter(obs_smb, obs_alts, s=18, c="tab:red", alpha=0.7,
-                               edgecolors="k", linewidths=0.4, zorder=5,
-                               label="stakes (m ice eq./yr)")
-                    ax.legend(loc="best", fontsize=8)
-                ax.axvline(0.0, color="k", linewidth=0.5)
-                ax.set_xlabel("SMB (m ice eq./yr)")
-                ax.set_ylabel("Elevation (m)")
-                ax.set_title(f"SMB profile — iter {i + 1}")
-                ax.grid(True, alpha=0.3)
-                fig.tight_layout()
-                fig.savefig(os.path.join(smb_vec_dir, f"smb_vec_iter_{i + 1:04d}.png"), dpi=100)
-                plt.close(fig)
-            print(
-                f"[smb_inference] Iter {i + 1}/{opt_cfg.nbitmax}: "
-                f"loss={loss_val:.5f}, data={data_val:.5f}, "
-                f"rmse={float(metrics['rmse']):.3f}"
-            )
-
-        # Early stopping
-        if i > 10 and opt_cfg.early_stop_patience > 0:
-            if best_loss - loss_val > opt_cfg.early_stop_threshold:
-                best_loss = loss_val
-                no_improve_count = 0
-            else:
-                no_improve_count += 1
-
-            if no_improve_count >= opt_cfg.early_stop_patience:
+            if i % log_freq == 0 or i == opt_cfg.nbitmax - 1:
+                _save_profile_plot(smb_vec.numpy(), i + 1)
                 print(
-                    f"[smb_inference] Early stopping at iteration {i + 1} "
-                    f"(no improvement for {opt_cfg.early_stop_patience} iters)"
+                    f"[smb_inference] Iter {i + 1}/{opt_cfg.nbitmax}: "
+                    f"loss={loss_val:.5f}, data={data_val:.5f}"
                 )
-                break
 
-            if loss_val <= getattr(opt_cfg, "loss_threshold", 1.0e-4):
-                print(f"[smb_inference] Loss threshold reached at iteration {i + 1}")
-                break
+            if i > 10 and opt_cfg.early_stop_patience > 0:
+                if best_loss - loss_val > opt_cfg.early_stop_threshold:
+                    best_loss = loss_val
+                    no_improve_count = 0
+                else:
+                    no_improve_count += 1
+
+                if no_improve_count >= opt_cfg.early_stop_patience:
+                    print(
+                        f"[smb_inference] Early stopping at iteration {i + 1} "
+                        f"(no improvement for {opt_cfg.early_stop_patience} iters)"
+                    )
+                    break
+
+                if loss_val <= getattr(opt_cfg, "loss_threshold", 1.0e-4):
+                    print(f"[smb_inference] Loss threshold reached at iteration {i + 1}")
+                    break
+
+    elif optimizer_name == "lbfgs":
+        # tfp.optimizer.lbfgs_minimize runs its own loop. We wrap the value-
+        # and-gradients closure so history, logs, and per-iter profile plots
+        # are still captured on every function evaluation.
+        call_counter = {"n": 0}
+        last_H = {"H": None}
+        max_iters = int(opt_cfg.nbitmax)
+        tolerance = float(getattr(opt_cfg, "lbfgs_tolerance", 1.0e-6))
+        x_tolerance = float(getattr(opt_cfg, "lbfgs_x_tolerance", 0.0))
+        f_rel_tol_default = (
+            float(opt_cfg.early_stop_threshold)
+            if float(opt_cfg.early_stop_threshold) > 0 else 0.0
+        )
+        f_rel_tolerance = float(
+            getattr(opt_cfg, "lbfgs_f_relative_tolerance", f_rel_tol_default)
+        )
+        memory = int(getattr(opt_cfg, "lbfgs_memory", 10))
+
+        def _value_and_gradient(x):
+            with tf.GradientTape() as tape:
+                tape.watch(x)
+                total, data_term, H = _compute_loss(x)
+            grad = tape.gradient(total, x)
+
+            i = call_counter["n"]
+            call_counter["n"] = i + 1
+            loss_val = float(total.numpy())
+            data_val = float(data_term.numpy())
+            loss_history.append(loss_val)
+            data_history.append(data_val)
+            last_H["H"] = H
+            if i % log_freq == 0 or i == max_iters - 1:
+                _save_profile_plot(x.numpy(), i + 1)
+                print(
+                    f"[smb_inference] L-BFGS eval {i + 1}: "
+                    f"loss={loss_val:.5f}, data={data_val:.5f}"
+                )
+            return total, grad
+
+        initial_position = tf.identity(smb_vec)
+        results = tfp.optimizer.lbfgs_minimize(
+            _value_and_gradient,
+            initial_position=initial_position,
+            max_iterations=max_iters,
+            num_correction_pairs=memory,
+            tolerance=tolerance,
+            x_tolerance=x_tolerance,
+            f_relative_tolerance=f_rel_tolerance,
+        )
+
+        smb_vec.assign(results.position)
+        final_loss, _, H_sim = _compute_loss(smb_vec)
+        print(
+            f"[smb_inference] L-BFGS converged={bool(results.converged.numpy())}, "
+            f"failed={bool(results.failed.numpy())}, "
+            f"iterations={int(results.num_iterations.numpy())}, "
+            f"evaluations={int(results.num_objective_evaluations.numpy())}, "
+            f"final_loss={float(final_loss.numpy()):.5f}"
+        )
+        if H_sim is None:
+            H_sim = last_H["H"]
+
+    else:
+        raise ValueError(
+            f"[smb_inference] Unknown optimizer '{optimizer_name}'. "
+            "Supported: 'adam', 'lbfgs'."
+        )
 
     return H_sim, smb_vec, z_min, dz, loss_history, data_history
 

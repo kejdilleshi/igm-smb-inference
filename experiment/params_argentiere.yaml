@@ -83,7 +83,7 @@ processes:
     fitting:
       velsurfobs_std: 2.1
     regularization:
-      thk: 100.0
+      thk: 10.0
       smooth_anisotropy_factor: 1.0
       convexity_weight: 0.0
       to_regularize: thk
@@ -106,13 +106,20 @@ processes:
       smb_init_low: -10.0
       smb_init_high: 1.0
     optimization:
-      nbitmax: 300
-      learning_rate: 0.1
-      regularisation: 0.25
+      # optimizer: 'adam' or 'lbfgs'
+      optimizer: lbfgs
+      nbitmax: 50
+      learning_rate: 0.1          # Adam only
+      regularisation: 0.1
       early_stop_patience: -1
       early_stop_threshold: 0.001
       retrain_emulator_freq: 50000
       early_retrain_iters: 1
+      # L-BFGS options (ignored when optimizer=adam)
+      lbfgs_memory: 10
+      lbfgs_tolerance: 1.0e-6
+      lbfgs_x_tolerance: 0.0
+      lbfgs_f_relative_tolerance: 0.0
 
 
     output:
