@@ -34,7 +34,7 @@ DB_PATH = os.path.join(SWEEP_DIR, "optuna_study.db")
 # ── Search space (grid) ─────────────────────────────────────────────────────
 
 SEARCH_SPACE = {
-    "regularisation": [0.01, 0.1, 0.5],
+    "regularisation": [0.05,0.1,0.5],
     "learning_rate": [0.1],
 }
 

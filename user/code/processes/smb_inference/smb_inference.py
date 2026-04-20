@@ -197,23 +197,7 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
         #     )
         #     print(f"[smb_inference] Emulator retrained at iteration {i + 1}")
 
-        if smb_vec_dir is not None:
-            z_axis = float(z_min) + float(dz) * np.arange(smb_vec.shape[0])
-            fig, ax = plt.subplots(figsize=(5, 8))
-            ax.plot(smb_vec.numpy(), z_axis, "-o", markersize=3, label="profile")
-            if obs_alts is not None:
-                ax.scatter(obs_smb, obs_alts, s=18, c="tab:red", alpha=0.7,
-                           edgecolors="k", linewidths=0.4, zorder=5,
-                           label="stakes (m ice eq./yr)")
-                ax.legend(loc="best", fontsize=8)
-            ax.axvline(0.0, color="k", linewidth=0.5)
-            ax.set_xlabel("SMB (m ice eq./yr)")
-            ax.set_ylabel("Elevation (m)")
-            ax.set_title(f"SMB profile — iter {i + 1}")
-            ax.grid(True, alpha=0.3)
-            fig.tight_layout()
-            fig.savefig(os.path.join(smb_vec_dir, f"smb_vec_iter_{i + 1:04d}.png"), dpi=100)
-            plt.close(fig)
+        
 
 
         with tf.GradientTape() as tape:
@@ -251,6 +235,23 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
         data_history.append(data_val)
 
         if i % log_freq == 0 or i == opt_cfg.nbitmax - 1:
+            if smb_vec_dir is not None:
+                z_axis = float(z_min) + float(dz) * np.arange(smb_vec.shape[0])
+                fig, ax = plt.subplots(figsize=(5, 8))
+                ax.plot(smb_vec.numpy(), z_axis, "-o", markersize=3, label="profile")
+                if obs_alts is not None:
+                    ax.scatter(obs_smb, obs_alts, s=18, c="tab:red", alpha=0.7,
+                               edgecolors="k", linewidths=0.4, zorder=5,
+                               label="stakes (m ice eq./yr)")
+                    ax.legend(loc="best", fontsize=8)
+                ax.axvline(0.0, color="k", linewidth=0.5)
+                ax.set_xlabel("SMB (m ice eq./yr)")
+                ax.set_ylabel("Elevation (m)")
+                ax.set_title(f"SMB profile — iter {i + 1}")
+                ax.grid(True, alpha=0.3)
+                fig.tight_layout()
+                fig.savefig(os.path.join(smb_vec_dir, f"smb_vec_iter_{i + 1:04d}.png"), dpi=100)
+                plt.close(fig)
             print(
                 f"[smb_inference] Iter {i + 1}/{opt_cfg.nbitmax}: "
                 f"loss={loss_val:.5f}, data={data_val:.5f}, "

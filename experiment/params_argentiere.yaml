@@ -103,13 +103,13 @@ processes:
     inversion:
       method: profile
       dz: 200.0
-      smb_init_low: -1.0
+      smb_init_low: -10.0
       smb_init_high: 1.0
     optimization:
-      nbitmax: 200
+      nbitmax: 300
       learning_rate: 0.1
-      regularisation: 0.0051
-      early_stop_patience: 20
+      regularisation: 0.25
+      early_stop_patience: -1
       early_stop_threshold: 0.001
       retrain_emulator_freq: 50000
       early_retrain_iters: 1
