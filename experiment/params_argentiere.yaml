@@ -30,7 +30,7 @@ inputs:
 processes:
   iceflow:
     physics:
-      init_slidingco: 0.25 # <----- ensure this is the same as the value used in the input file since here we are not trying to invert for tau_ref but only for thk
+      init_slidingco: 0.45 # <----- ensure this is the same as the value used in the input file since here we are not trying to invert for tau_ref but only for thk
       sliding:
         weertman:
           u_ref: 100.0

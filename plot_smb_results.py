@@ -7,16 +7,19 @@ For each run containing smb_inference results, generates:
   2. SMB elevation profile (elevation vs SMB)
 
 Usage:
-    python plot_smb_results.py
+    python plot_smb_results.py                               # default: outputs/
+    python plot_smb_results.py --root sweep_results_slidingco
+    python plot_smb_results.py --root sweep_results_slidingco --input-nc data/input_argentiere.nc
 """
 
+import argparse
 import os
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
 import yaml
 
-INPUT_NC = "data/input.nc"
+DEFAULT_INPUT_NC = "data/input_argentiere.nc"
 DZ_DEFAULT = 200.0
 
 
@@ -34,13 +37,13 @@ def _get_dz_from_hydra(run_dir):
         return None
 
 
-def _get_z_min_from_input(thk_obs):
+def _get_z_min_from_input(thk_obs, input_nc):
     """Compute z_min = min(topg + thk) from input.nc, using observed thk."""
-    if not os.path.exists(INPUT_NC):
+    if not os.path.exists(input_nc):
         return None
     try:
         import xarray as xr
-        ds = xr.open_dataset(INPUT_NC)
+        ds = xr.open_dataset(input_nc)
         usurf = ds["usurf"].values
         thk = ds["thk"].values
         topg = usurf - thk
@@ -57,6 +60,13 @@ def find_smb_runs(root="outputs"):
     return [os.path.dirname(m) for m in matches]
 
 
+def _run_label(run_dir, root):
+    try:
+        return os.path.relpath(run_dir, root)
+    except ValueError:
+        return run_dir
+
+
 def load_npy(path):
     """Load a .npy file, return None if missing."""
     if os.path.exists(path):
@@ -64,7 +74,7 @@ def load_npy(path):
     return None
 
 
-def plot_thickness(run_dir, thk_obs, thk_opt):
+def plot_thickness(run_dir, thk_obs, thk_opt, root):
     """3-panel figure: observed, optimized, residual thickness."""
     residual = thk_opt - thk_obs
 
@@ -89,7 +99,7 @@ def plot_thickness(run_dir, thk_obs, thk_opt):
         ax.set_xlabel("x (grid)")
         ax.set_ylabel("y (grid)")
 
-    run_label = os.path.relpath(run_dir, "outputs")
+    run_label = _run_label(run_dir, root)
     fig.suptitle(f"Thickness comparison  [{run_label}]", fontsize=13)
     fig.tight_layout()
 
@@ -99,7 +109,7 @@ def plot_thickness(run_dir, thk_obs, thk_opt):
     print(f"  Saved {out_path}")
 
 
-def plot_smb_profile(run_dir, smb_vec, z_min, dz):
+def plot_smb_profile(run_dir, smb_vec, z_min, dz, root):
     """SMB profile: elevation (y) vs SMB (x)."""
     n = len(smb_vec)
 
@@ -118,7 +128,7 @@ def plot_smb_profile(run_dir, smb_vec, z_min, dz):
     ax.set_ylabel(ylabel)
     ax.grid(True, alpha=0.3)
 
-    run_label = os.path.relpath(run_dir, "outputs")
+    run_label = _run_label(run_dir, root)
     ax.set_title(f"SMB elevation profile  [{run_label}]")
     fig.tight_layout()
 
@@ -129,15 +139,28 @@ def plot_smb_profile(run_dir, smb_vec, z_min, dz):
 
 
 def main():
-    runs = find_smb_runs()
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    parser.add_argument(
+        "--root",
+        default="outputs",
+        help="Directory to search recursively for smb_inference results (default: outputs)",
+    )
+    parser.add_argument(
+        "--input-nc",
+        default=DEFAULT_INPUT_NC,
+        help=f"Input .nc file used for z_min fallback (default: {DEFAULT_INPUT_NC})",
+    )
+    args = parser.parse_args()
+
+    runs = find_smb_runs(args.root)
     if not runs:
-        print("No smb_inference results found in outputs/")
+        print(f"No smb_inference results found in {args.root}/")
         return
 
     print(f"Found {len(runs)} SMB inference run(s)\n")
 
     for run_dir in runs:
-        print(f"[{os.path.relpath(run_dir, 'outputs')}]")
+        print(f"[{_run_label(run_dir, args.root)}]")
 
         thk_obs = load_npy(os.path.join(run_dir, "thk_observed.npy"))
         thk_opt = load_npy(os.path.join(run_dir, "thk_optimized.npy"))
@@ -145,7 +168,7 @@ def main():
 
         z_min = load_npy(os.path.join(run_dir, "z_min.npy"))
         if z_min is None and thk_obs is not None:
-            z_min = _get_z_min_from_input(thk_obs)
+            z_min = _get_z_min_from_input(thk_obs, args.input_nc)
 
         dz = load_npy(os.path.join(run_dir, "dz.npy"))
         if dz is None:
@@ -154,7 +177,7 @@ def main():
             dz = DZ_DEFAULT
 
         if thk_obs is not None and thk_opt is not None:
-            plot_thickness(run_dir, thk_obs, thk_opt)
+            plot_thickness(run_dir, thk_obs, thk_opt, args.root)
         else:
             missing = []
             if thk_obs is None:
@@ -164,7 +187,7 @@ def main():
             print(f"  Skipping thickness plot: missing {', '.join(missing)}")
 
         if smb_vec is not None:
-            plot_smb_profile(run_dir, smb_vec, z_min, dz)
+            plot_smb_profile(run_dir, smb_vec, z_min, dz, args.root)
         else:
             print(f"  Skipping SMB profile plot: missing smb_vec.npy")
 
