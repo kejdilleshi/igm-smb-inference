@@ -38,6 +38,7 @@ from core.inversion import _eval_pair
 from core.smb import update_smb_profile
 from data.loader import load_observations_from_nc, load_smb_point_obs
 from visualization.plots import plot_loss_components
+from utils.emulator_tools import compute_divflux
 from config.read_config import Config
 
 
@@ -101,7 +102,7 @@ def _load_observation(smb_cfg, state, topg):
         )
 
 
-def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ice_mask, outdir=None):
+def _run_profile_inversion(cfg, smb_cfg, glacier_model, observation, topg, H_init, ice_mask, outdir=None):
     """
     Optimize a 1D elevation-dependent SMB profile to match observed thickness.
 
@@ -160,17 +161,23 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
         smb_vec_dir = os.path.join(outdir, "smb_vec_iters")
         os.makedirs(smb_vec_dir, exist_ok=True)
 
-    # Optional: overlay stake SMB observations on per-iter profile plots.
-    # CSV has columns X, Y, Alt, Annual_SMB (m w.e.). We ignore X/Y and
-    # convert to m ice eq./yr (divide by rho_ice=0.917) so it matches the
-    # smb_vec axis.
+    # Stake SMB observations (m w.e./yr, native CSV units) for overlay on the
+    # per-iter profile plots. The model's smb_vec is m ice eq./yr (forced by
+    # the dynamics in thk.py), so we plot smb_vec * rho_ice/rho_w to express
+    # the displayed profile in the same w.e. convention as the stakes and
+    # Kneib et al. (2024). Display-only — the trainable variable, the loss,
+    # and state.smb stay in m ice eq./yr.
+    rho_ice = float(cfg.processes.iceflow.physics.ice_density)
+    rho_w = 1000.0
+    ice_to_we = rho_ice / rho_w  # ≈ 0.917
+
     obs_alts, obs_smb = None, None
     smb_points_file = getattr(smb_cfg.observations, "smb_points_file", "") or ""
     if smb_points_file and os.path.exists(smb_points_file):
         try:
-            obs_alts, obs_smb = load_smb_point_obs(smb_points_file)
+            obs_alts, obs_smb = load_smb_point_obs(smb_points_file, to_ice_eq=False)
             print(f"[smb_inference] Loaded {len(obs_alts)} SMB stake points "
-                  f"from {smb_points_file}")
+                  f"from {smb_points_file} (kept in m w.e./yr)")
         except Exception as e:
             print(f"[smb_inference] Could not load {smb_points_file}: {e}")
 
@@ -179,23 +186,22 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
             return
         if (iter_idx - 1) % 5 != 0:
             return
+        smb_we = smb_values * ice_to_we
         z_axis = float(z_min) + float(dz) * np.arange(smb_values.shape[0])
         fig, ax = plt.subplots(figsize=(5, 8))
-        ax.plot(smb_values, z_axis, "-o", markersize=3, label="profile")
+        ax.plot(smb_we, z_axis, "-o", markersize=3, label="profile")
         if obs_alts is not None:
             ax.scatter(obs_smb, obs_alts, s=18, c="tab:red", alpha=0.7,
                        edgecolors="k", linewidths=0.4, zorder=5,
-                       label="stakes (m ice eq./yr)")
-            if len(obs_alts) >= 2:
-                slope, intercept = np.polyfit(obs_alts, obs_smb, 1)
-                fit_smb = slope * z_axis + intercept
-                resid = obs_smb - (slope * obs_alts + intercept)
+                       label="stakes (m w.e./yr)")
+            if len(obs_alts) >= 1:
+                smb_at_stakes = np.interp(obs_alts, z_axis, smb_we)
+                resid = obs_smb - smb_at_stakes
                 rmse = float(np.sqrt(np.mean(resid ** 2)))
-                ax.plot(fit_smb, z_axis, color="tab:orange", linewidth=1.5,
-                        label=f"stake fit (RMSE={rmse:.3f})")
+                ax.plot([], [], " ", label=f"profile vs stakes RMSE={rmse:.3f}")
             ax.legend(loc="best", fontsize=8)
         ax.axvline(0.0, color="k", linewidth=0.5)
-        ax.set_xlabel("SMB (m ice eq./yr)")
+        ax.set_xlabel("SMB (m w.e./yr)")
         ax.set_ylabel("Elevation (m)")
         ax.set_title(f"SMB profile — iter {iter_idx}")
         ax.grid(True, alpha=0.3)
@@ -339,8 +345,142 @@ def _run_profile_inversion(smb_cfg, glacier_model, observation, topg, H_init, ic
             "Supported: 'adam', 'lbfgs'."
         )
 
+    # Post-optimization: replay forward with retrain_mode=True to capture
+    # (H, ubar, vbar) at t_start and at ttot, then plot flux divergence.
+    if outdir is not None:
+        try:
+            glacier_model(
+                precip_tensor=None,
+                T_m_lowest=None,
+                T_s=None,
+                melt_factor=None,
+                smb_method="profile",
+                smb_vec=smb_vec,
+                z_min=z_min,
+                dz=dz,
+                retrain_mode=True,
+            )
+            _save_divflux_comparison(glacier_model, outdir)
+        except Exception as e:
+            print(f"[smb_inference] divflux snapshot plot failed: {e}")
+
     return H_sim, smb_vec, z_min, dz, loss_history, data_history
 
+
+def _save_divflux_comparison(glacier_model, outdir):
+    """Plot flux divergence at the first (t_start) and last (ttot) time steps
+    of the post-optimization replay, plus their residual.
+
+    The first two panels share the same colour scale/colorbar.
+    The residual panel has its own colourbar.
+    """
+    snap_start = getattr(glacier_model, "snapshot_start", None)
+    snap_end = getattr(glacier_model, "snapshot_end", None)
+    if snap_start is None or snap_end is None:
+        print("[smb_inference] No snapshots captured; skipping divflux plot.")
+        return
+
+    dx = float(glacier_model.dx)
+    dy = float(glacier_model.dy)
+
+    div_start = compute_divflux(
+        snap_start["ubar"], snap_start["vbar"], snap_start["H"], dx, dy
+    ).numpy()
+
+    div_end = compute_divflux(
+        snap_end["ubar"], snap_end["vbar"], snap_end["H"], dx, dy
+    ).numpy()
+
+    # Residual
+    residual = div_end - div_start
+
+    H_start = snap_start["H"].numpy()
+    H_end = snap_end["H"].numpy()
+
+    div_start_m = np.where(H_start > 0, div_start, np.nan)
+    div_end_m = np.where(H_end > 0, div_end, np.nan)
+
+    # Mask residual where either snapshot has no ice
+    mask = (H_start > 0) & (H_end > 0)
+    residual_m = np.where(mask, residual, np.nan)
+
+    # Shared color scale for first two panels
+    vmax = float(np.nanmax(np.abs(div_start_m)))
+    if not np.isfinite(vmax) or vmax == 0.0:
+        vmax = 1.0
+
+    # Independent color scale for residual
+    vmax_res = float(np.nanmax(np.abs(residual_m)))
+    if not np.isfinite(vmax_res) or vmax_res == 0.0:
+        vmax_res = 1.0
+
+    # RMSE of residual
+    residual_rmse = np.sqrt(np.nanmean(residual_m**2))
+
+    ny, nx = H_start.shape
+    extent = [0, nx * dx / 1000, 0, ny * dy / 1000]
+
+    t_start_label = int(round(snap_start["time"]))
+    t_end_label = int(round(snap_end["time"]))
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5), dpi=120)
+
+    # --- Start ---
+    im0 = axes[0].imshow(
+        div_start_m,
+        cmap="RdBu_r",
+        origin="lower",
+        extent=extent,
+        vmin=-vmax,
+        vmax=vmax,
+    )
+    axes[0].set_title(f"Flux divergence — {t_start_label}")
+    axes[0].set_xlabel("x (km)")
+    axes[0].set_ylabel("y (km)")
+
+    # --- End ---
+    axes[1].imshow(
+        div_end_m,
+        cmap="RdBu_r",
+        origin="lower",
+        extent=extent,
+        vmin=-vmax,
+        vmax=vmax,
+    )
+    axes[1].set_title(f"Flux divergence — {t_end_label}")
+    axes[1].set_xlabel("x (km)")
+    axes[1].set_ylabel("y (km)")
+
+    # Shared colorbar for first two panels
+    cbar0 = fig.colorbar(im0, ax=axes[:2], fraction=0.046, pad=0.04)
+    cbar0.set_label("div(u·H)  (m/yr)")
+
+    # --- Residual ---
+    im_res = axes[2].imshow(
+        residual_m,
+        cmap="RdBu_r",
+        origin="lower",
+        extent=extent,
+        vmin=-vmax_res,
+        vmax=vmax_res,
+    )
+    axes[2].set_title(f"Residual RMSE = {residual_rmse:.2f}")
+    axes[2].set_xlabel("x (km)")
+    axes[2].set_ylabel("y (km)")
+
+    # Independent residual colorbar
+    cbar_res = fig.colorbar(im_res, ax=axes[2], fraction=0.046, pad=0.04)
+    cbar_res.set_label("Residual  (m/yr)")
+
+    out_path = os.path.join(
+        outdir,
+        f"divflux_{t_start_label}_vs_{t_end_label}.png"
+    )
+
+    fig.savefig(out_path, bbox_inches="tight")
+    plt.close(fig)
+
+    print(f"[smb_inference] Saved divflux comparison to {out_path}")
 
 # ─── IGM process interface ───────────────────────────────────────────────────
 
@@ -429,7 +569,7 @@ def initialize(cfg, state):
         os.makedirs(outdir, exist_ok=True)
         H_sim, smb_vec, z_min, dz, loss_history, data_history = (
             _run_profile_inversion(
-                smb_cfg, glacier_model, observation, topg, H_init, ice_mask,
+                cfg, smb_cfg, glacier_model, observation, topg, H_init, ice_mask,
                 outdir=outdir,
             )
         )

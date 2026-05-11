@@ -1,10 +1,20 @@
 # @package _global_
 #
-# SMB inference only on Aletsch Glacier.
-# Inverts for a 1D elevation-dependent SMB profile using pre-existing
-# DA-optimized thickness and retrained FNO2 emulator from state.
-# Requires a prior DA run to have populated the state.
+# SMB inference on Grosser Aletschgletscher (Switzerland).
+# Period: 2009 → 2017 (stand-in; will be re-targeted to 2009 → 2023 once a
+# 2023 DEM is staged into input_aletsch.nc as `usurfinfer`).
 #
+# Stages:
+#   1. data_assimilation  — invert thk + slidingco against velsurf / icemask
+#                           / thkobs (GPR), using the pretrained SIADecompNet
+#                           iceflow emulator already used for Argentière.
+#   2. smb_inference      — forward-run from t_start to ttot, fit a 1-D SMB(z)
+#                           profile (dz=200 m) to match usurfinfer + GLAMOS
+#                           elevation-band stakes.
+#
+# DA hyperparameters below are inherited from the Argentière sweep and should
+# be re-tuned for Aletsch (optuna_sweep_da*.py). Treat the first run as a
+# sanity check, not a final inversion.
 
 core:
   hardware:
@@ -20,12 +30,12 @@ defaults:
 
 inputs:
   local:
-    filename: input_argentiere.nc
+    filename: input_aletsch.nc
     crop:
-      xmin: 340310.0
-      xmax: 349366.0
-      ymin: 5085870.0
-      ymax: 5094774.0
+      xmin: 417650.0
+      xmax: 430450.0
+      ymin: 5138650.0
+      ymax: 5157550.0
 
 processes:
   iceflow:
@@ -108,38 +118,35 @@ processes:
         - divflux
         - icemask
         - arrhenius
-        
+
   smb_inference:
-    t_start: 2012.0
-    ttot: 2021.0
+    t_start: 2009.0
+    ttot: 2017.0
     dtmax: 1.0
     cfl: 0.2
     emulator:
       from_state: true
     observations:
       state_variable: usurfinfer
-      smb_points_file: ${hydra:runtime.cwd}/data/argentiere/SMB_argentiere_2012-2021_utm32N.csv
+      smb_points_file: ${hydra:runtime.cwd}/data/aletsch/SMB_aletsch_2009-2017_utm32N.csv
     inversion:
       method: profile
       dz: 200.0
       smb_init_low: -10.0
       smb_init_high: 1.0
     optimization:
-      # optimizer: 'adam' or 'lbfgs'
       optimizer: lbfgs
-      nbitmax: 50
-      learning_rate: 0.1          # Adam only
+      nbitmax: 100
+      learning_rate: 0.1
       regularisation: 0.05
       early_stop_patience: -1
       early_stop_threshold: 0.001
       retrain_emulator_freq: 50000
       early_retrain_iters: 1
-      # L-BFGS options (ignored when optimizer=adam)
       lbfgs_memory: 10
       lbfgs_tolerance: 1.0e-6
       lbfgs_x_tolerance: 0.0
       lbfgs_f_relative_tolerance: 0.0
-
 
     output:
       vis_freq: 5.0
@@ -147,5 +154,3 @@ processes:
       outdir: ./smb_inference
       plot_loss: true
       save_results: true
-
-

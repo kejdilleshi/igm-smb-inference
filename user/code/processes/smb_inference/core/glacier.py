@@ -224,6 +224,10 @@ class GlacierDynamicsCheckpointed(tf.keras.Model):
             retrain_interval_tf = tf.constant(retrain_interval, dtype=tf.float32)
             t_last_retrain = tf.constant(time, dtype=tf.float32)
 
+            self.snapshot_start = None
+            self.snapshot_end = None
+            first_step = True
+
             while time_tf < ttot_tf:
                 H_ice, Z_surf, time_tf, ubar, vbar = emulator_step_fn(
                     H_ice, Z_surf, smb, time_tf,
@@ -235,6 +239,21 @@ class GlacierDynamicsCheckpointed(tf.keras.Model):
                             dx=float(self.dx), dy=float(self.dy),
                             time=float(time_tf)
                         )
+
+                if first_step:
+                    self.snapshot_start = {
+                        "H": tf.identity(H_ice),
+                        "ubar": tf.identity(ubar),
+                        "vbar": tf.identity(vbar),
+                        "time": float(time_tf.numpy()),
+                    }
+                    first_step = False
+                self.snapshot_end = {
+                    "H": tf.identity(H_ice),
+                    "ubar": tf.identity(ubar),
+                    "vbar": tf.identity(vbar),
+                    "time": float(time_tf.numpy()),
+                }
 
                 if (time_tf - t_last_update) >= vis_freq_tf:
                     new_smb = update_smb_profile(Z_surf, smb_vec, z_min, dz) * ice_mask
