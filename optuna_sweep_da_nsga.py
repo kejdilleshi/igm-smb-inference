@@ -7,6 +7,9 @@ Search space (continuous, log where appropriate):
     processes.data_assimilation.fitting.thkobs_std        : [0.5, 20]    (log)
     processes.data_assimilation.regularization.slidingco  : [1e7, 1e10]  (log)
     processes.data_assimilation.scaling.slidingco         : [1e-2, 1.0]  (log)
+    processes.iceflow.physics.init_slidingco              : [0.05, 2.0]  (log)
+        ↑ this is the τ_ref (reference basal shear stress in MPa for
+          u_ref=100 m/yr). HIGHER value = stiffer bed = LESS sliding.
 
 Three objectives (all minimized, last row of costs.dat):
     1. velsurf
@@ -58,7 +61,7 @@ PLOTS_DIR = os.path.join(SWEEP_DIR, "plots")
 
 # ── Defaults (overridable via CLI) ──────────────────────────────────────────
 
-DEFAULT_N_TRIALS = 100
+DEFAULT_N_TRIALS = 150
 DEFAULT_POPULATION = 20
 DEFAULT_SEED = 42
 
@@ -66,7 +69,7 @@ DEFAULT_SEED = 42
 # one column per active cost term; with cost_list=[velsurf, icemask, thk] and
 # control_list=[thk, slidingco] the header is:
 #   velsurf  thk  thk_regu  slid_regu  glen
-DA_COST_COLUMNS = ["velsurf", "thk", "thk_regu"]
+DA_COST_COLUMNS = ["velsurf", "thk", "thk_regu", "slid_regu"]
 
 
 # ── Metric extraction ───────────────────────────────────────────────────────
@@ -97,6 +100,7 @@ def objective(trial: optuna.Trial, gpu_id: int = 0):
         "thkobs_std": trial.suggest_float("thkobs_std", 0.5, 20.0, log=True),
         "regularization_slidingco": trial.suggest_float("regularization_slidingco", 1.0e7, 1.0e10, log=True),
         "scaling_slidingco": trial.suggest_float("scaling_slidingco", 1.0e-2, 1.0, log=True),
+        "init_slidingco": trial.suggest_float("init_slidingco", 0.05, 2.0, log=True),
     }
     trial.set_user_attr("gpu_id", gpu_id)
 
@@ -104,11 +108,12 @@ def objective(trial: optuna.Trial, gpu_id: int = 0):
     os.makedirs(trial_dir, exist_ok=True)
 
     overrides = [
-        "+experiment=params_argentiere_da",
+        "+experiment=params_oggm_aletsch_da",
         f"processes.data_assimilation.regularization.thk={params['regularization_thk']}",
         f"processes.data_assimilation.regularization.slidingco={params['regularization_slidingco']}",
         f"processes.data_assimilation.scaling.slidingco={params['scaling_slidingco']}",
         f"processes.data_assimilation.fitting.thkobs_std={params['thkobs_std']}",
+        f"processes.iceflow.physics.init_slidingco={params['init_slidingco']}",
         f"hydra.run.dir={trial_dir}",
     ]
 
@@ -126,7 +131,8 @@ def objective(trial: optuna.Trial, gpu_id: int = 0):
         f"reg_thk={params['regularization_thk']:.2e}  "
         f"thko_std={params['thkobs_std']:.3f}  "
         f"reg_slid={params['regularization_slidingco']:.2e}  "
-        f"sc_slid={params['scaling_slidingco']:.2e}",
+        f"sc_slid={params['scaling_slidingco']:.2e}  "
+        f"init_slid={params['init_slidingco']:.3f}",
         flush=True,
     )
 
@@ -277,12 +283,14 @@ PARAM_NAMES = [
     "thkobs_std",
     "regularization_slidingco",
     "scaling_slidingco",
+    "init_slidingco",
 ]
 LOG_PARAMS = {
     "regularization_thk",
     "thkobs_std",
     "regularization_slidingco",
     "scaling_slidingco",
+    "init_slidingco",
 }
 
 
@@ -438,7 +446,7 @@ def main():
     parser.add_argument(
         "--workers-per-gpu",
         type=int,
-        default=4,
+        default=2,
         help="Concurrent trials per GPU (default: 4).",
     )
     parser.add_argument(
@@ -512,7 +520,8 @@ def main():
         print(f"{'=' * 100}")
         header = (
             f"  {'trial':>5}  {'reg_thk':>10}  {'thko_std':>9}  "
-            f"{'reg_slid':>10}  {'sc_slid':>10}  {'velsurf':>9}  {'thk':>9}  {'thk_regu':>9}"
+            f"{'reg_slid':>10}  {'sc_slid':>10}  {'init_slid':>9}  "
+            f"{'velsurf':>9}  {'thk':>9}  {'thk_regu':>9}"
         )
         print(header)
         for r in rows:
@@ -521,6 +530,7 @@ def main():
                     f"  {r['trial']:>5}  "
                     f"{r['regularization_thk']:>10.2e}  {r['thkobs_std']:>9.3f}  "
                     f"{r['regularization_slidingco']:>10.2e}  {r['scaling_slidingco']:>10.2e}  "
+                    f"{r['init_slidingco']:>9.3f}  "
                     f"{r['velsurf']:>9.4f}  {r['thk']:>9.4f}  {r['thk_regu']:>9.4f}"
                 )
 
