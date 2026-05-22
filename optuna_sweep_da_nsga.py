@@ -1,29 +1,38 @@
 #!/usr/bin/env python3
 """
-Multi-objective Optuna NSGA-II sweep over DA hyperparameters (Argentière).
+Multi-objective Optuna NSGA-II sweep over DA hyperparameters. Default target
+is Rhonegletscher (OGGM/COP-DEM pipeline, params_oggm_rhone_da.yaml); pass
+`--experiment <name>` to sweep a different DA config (e.g. params_aletsch_da,
+params_oggm_aletsch_da). The sweep dir and Optuna study name are derived
+automatically from the experiment name, so different targets don't clobber
+each other's databases.
 
 Search space (continuous, log where appropriate):
-    processes.data_assimilation.regularization.thk        : [300, 1000]  (log)
-    processes.data_assimilation.fitting.thkobs_std        : [0.5, 20]    (log)
-    processes.data_assimilation.regularization.slidingco  : [1e7, 1e10]  (log)
-    processes.data_assimilation.scaling.slidingco         : [1e-2, 1.0]  (log)
+    processes.data_assimilation.regularization.thk        : [1000, 4000] (log)
+    processes.data_assimilation.fitting.thkobs_std        : [0.5, 10]    (log)
     processes.iceflow.physics.init_slidingco              : [0.05, 2.0]  (log)
         ↑ this is the τ_ref (reference basal shear stress in MPa for
           u_ref=100 m/yr). HIGHER value = stiffer bed = LESS sliding.
+          Sliding is NOT optimized by DA here (control_list=[thk]); we
+          sweep init_slidingco to find a good fixed scalar value.
 
-Three objectives (all minimized, last row of costs.dat):
-    1. velsurf
-    2. thk
-    3. thk_regu
+Two objectives (both minimized, last row of costs.dat):
+    1. velsurf    — surface-velocity misfit
+    2. thk        — GlaThiDa thickness-observation misfit
+
+thk_regu (the curvature regularization on thk) is intentionally *not* an
+objective: it's an internal regularization term, not data fidelity, so
+including it would just push the Pareto front toward over-smoothed
+thickness fields that fit neither velsurf nor thk well.
 
 NSGA-II is a genetic algorithm — it evolves a population of candidates by
 selection / crossover / mutation, retaining a non-dominated Pareto front
-across the three objectives. Output is the Pareto-optimal trials, not a
+across the two objectives. Output is the Pareto-optimal trials, not a
 single best.
 
 Outputs
 -------
-    sweep_results_da_nsga/
+    sweep_results_<experiment>/
         optuna_study.db
         trial_XXXX/                 # one per evaluated candidate
         sweep_summary.json
@@ -35,8 +44,9 @@ Outputs
 Usage
 -----
     conda activate igm-pretrain
-    python optuna_sweep_da_nsga.py                  # 60 trials, 20-strong population
-    python optuna_sweep_da_nsga.py --n-trials 100
+    python optuna_sweep_da_nsga.py                                    # Rhone, default 30 trials
+    python optuna_sweep_da_nsga.py --n-trials 60
+    python optuna_sweep_da_nsga.py --experiment params_aletsch_da    # different target
     python optuna_sweep_da_nsga.py --plots-only
 """
 
@@ -55,21 +65,37 @@ from optuna.samplers import NSGAIISampler
 # ── Paths ────────────────────────────────────────────────────────────────────
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-SWEEP_DIR = os.path.join(PROJECT_DIR, "sweep_results_da_nsga")
-DB_PATH = os.path.join(SWEEP_DIR, "optuna_study.db")
-PLOTS_DIR = os.path.join(SWEEP_DIR, "plots")
 
 # ── Defaults (overridable via CLI) ──────────────────────────────────────────
 
-DEFAULT_N_TRIALS = 150
-DEFAULT_POPULATION = 20
+# Default to the OGGM/COP-DEM Rhone DA config — see experiment/params_oggm_rhone_da.yaml.
+# Each experiment name gets its own sweep_results_<name>/ dir and Optuna
+# study (keyed off the experiment), so flipping --experiment doesn't load a
+# prior sweep's DB back into a mismatched search space.
+DEFAULT_EXPERIMENT = "params_oggm_rhone_da"
+DEFAULT_N_TRIALS = 30
+DEFAULT_POPULATION = 10
 DEFAULT_SEED = 42
+
+
+def _experiment_paths(experiment: str):
+    """Derive per-experiment output dirs from the Hydra experiment name."""
+    sweep_dir = os.path.join(PROJECT_DIR, f"sweep_results_{experiment}")
+    return {
+        "sweep_dir": sweep_dir,
+        "db_path": os.path.join(sweep_dir, "optuna_study.db"),
+        "plots_dir": os.path.join(sweep_dir, "plots"),
+        "study_name": f"da_nsga2_{experiment}",
+    }
 
 # Last row of costs.dat columns we treat as objectives. The IGM DA loop emits
 # one column per active cost term; with cost_list=[velsurf, icemask, thk] and
-# control_list=[thk, slidingco] the header is:
-#   velsurf  thk  thk_regu  slid_regu  glen
-DA_COST_COLUMNS = ["velsurf", "thk", "thk_regu", "slid_regu"]
+# control_list=[thk] (slidingco NOT optimized) the header is:
+#   velsurf  thk  thk_regu  glen
+# We only treat the two data-fidelity terms as objectives — thk_regu is a
+# regularization, not data, and is still computed and saved in costs.dat
+# (via t.user_attrs["history_thk_regu"]) for diagnostics.
+DA_COST_COLUMNS = ["velsurf", "thk"]
 
 
 # ── Metric extraction ───────────────────────────────────────────────────────
@@ -94,24 +120,24 @@ def _read_da_costs(trial_dir: str):
 # ── Objective ───────────────────────────────────────────────────────────────
 
 
-def objective(trial: optuna.Trial, gpu_id: int = 0):
+def objective(trial: optuna.Trial, gpu_id: int, sweep_dir: str, experiment: str):
     params = {
-        "regularization_thk": trial.suggest_float("regularization_thk", 300.0, 1000.0, log=True),
-        "thkobs_std": trial.suggest_float("thkobs_std", 0.5, 20.0, log=True),
-        "regularization_slidingco": trial.suggest_float("regularization_slidingco", 1.0e7, 1.0e10, log=True),
-        "scaling_slidingco": trial.suggest_float("scaling_slidingco", 1.0e-2, 1.0, log=True),
+        "regularization_thk": trial.suggest_float("regularization_thk", 500.0, 4000.0, log=True),
+        "thkobs_std": trial.suggest_float("thkobs_std", 0.5, 10.0, log=True),
         "init_slidingco": trial.suggest_float("init_slidingco", 0.05, 2.0, log=True),
     }
     trial.set_user_attr("gpu_id", gpu_id)
 
-    trial_dir = os.path.join(SWEEP_DIR, f"trial_{trial.number:04d}")
+    trial_dir = os.path.join(sweep_dir, f"trial_{trial.number:04d}")
     os.makedirs(trial_dir, exist_ok=True)
 
     overrides = [
-        "+experiment=params_oggm_aletsch_da",
+        f"+experiment={experiment}",
+        # control_list=[thk] is already set in the DA config; keep this
+        # override as a defensive belt-and-braces guard in case the YAML
+        # is re-edited.
+        "processes.data_assimilation.control_list=[thk]",
         f"processes.data_assimilation.regularization.thk={params['regularization_thk']}",
-        f"processes.data_assimilation.regularization.slidingco={params['regularization_slidingco']}",
-        f"processes.data_assimilation.scaling.slidingco={params['scaling_slidingco']}",
         f"processes.data_assimilation.fitting.thkobs_std={params['thkobs_std']}",
         f"processes.iceflow.physics.init_slidingco={params['init_slidingco']}",
         f"hydra.run.dir={trial_dir}",
@@ -130,8 +156,6 @@ def objective(trial: optuna.Trial, gpu_id: int = 0):
         f"\n[trial {trial.number} | gpu {gpu_id}] start  "
         f"reg_thk={params['regularization_thk']:.2e}  "
         f"thko_std={params['thkobs_std']:.3f}  "
-        f"reg_slid={params['regularization_slidingco']:.2e}  "
-        f"sc_slid={params['scaling_slidingco']:.2e}  "
         f"init_slid={params['init_slidingco']:.3f}",
         flush=True,
     )
@@ -149,7 +173,7 @@ def objective(trial: optuna.Trial, gpu_id: int = 0):
     except subprocess.TimeoutExpired:
         print(f"[trial {trial.number} | gpu {gpu_id}] TIMED OUT", flush=True)
         _save_meta(trial_dir, params, "timeout", time.time() - t0)
-        return float("inf"), float("inf"), float("inf")
+        return float("inf"), float("inf")
 
     elapsed = time.time() - t0
 
@@ -167,7 +191,7 @@ def objective(trial: optuna.Trial, gpu_id: int = 0):
         tail = result.stderr[-500:] if result.stderr else result.stdout[-500:]
         print(f"    {tail}", flush=True)
         _save_meta(trial_dir, params, "failed", elapsed)
-        return float("inf"), float("inf"), float("inf")
+        return float("inf"), float("inf")
 
     histories, header = _read_da_costs(trial_dir)
     missing = [c for c in DA_COST_COLUMNS if c not in histories]
@@ -178,7 +202,7 @@ def objective(trial: optuna.Trial, gpu_id: int = 0):
             flush=True,
         )
         _save_meta(trial_dir, params, "missing_output", elapsed)
-        return float("inf"), float("inf"), float("inf")
+        return float("inf"), float("inf")
 
     finals = {c: float(histories[c][-1]) for c in DA_COST_COLUMNS}
 
@@ -192,18 +216,17 @@ def objective(trial: optuna.Trial, gpu_id: int = 0):
         elapsed,
         final_velsurf=finals["velsurf"],
         final_thk=finals["thk"],
-        final_thk_regu=finals["thk_regu"],
         n_iters=len(histories[DA_COST_COLUMNS[0]]),
     )
 
     print(
         f"[trial {trial.number} | gpu {gpu_id}] done  "
         f"velsurf={finals['velsurf']:.4f}  thk={finals['thk']:.4f}  "
-        f"thk_regu={finals['thk_regu']:.4f}  time={elapsed:.0f}s",
+        f"time={elapsed:.0f}s",
         flush=True,
     )
 
-    return finals["velsurf"], finals["thk"], finals["thk_regu"]
+    return finals["velsurf"], finals["thk"]
 
 
 def _save_meta(trial_dir, params, status, elapsed, **extra):
@@ -218,13 +241,13 @@ def _save_meta(trial_dir, params, status, elapsed, **extra):
 _study_lock = threading.Lock()  # serialise ask/tell into SQLite
 
 
-def _run_one_trial(study: optuna.Study, gpu_id: int):
+def _run_one_trial(study: optuna.Study, gpu_id: int, sweep_dir: str, experiment: str):
     """Pull one trial, evaluate it on the given GPU, and report back."""
     with _study_lock:
         trial = study.ask()
 
     try:
-        values = objective(trial, gpu_id=gpu_id)
+        values = objective(trial, gpu_id=gpu_id, sweep_dir=sweep_dir, experiment=experiment)
         with _study_lock:
             study.tell(trial, values)
     except Exception as exc:  # objective itself shouldn't throw, but be safe
@@ -236,19 +259,20 @@ def _run_one_trial(study: optuna.Study, gpu_id: int):
         )
 
 
-def _worker_loop(study: optuna.Study, gpu_id: int, work_q: queue.Queue):
+def _worker_loop(study, gpu_id, work_q, sweep_dir, experiment):
     while True:
         try:
             work_q.get_nowait()
         except queue.Empty:
             return
         try:
-            _run_one_trial(study, gpu_id)
+            _run_one_trial(study, gpu_id, sweep_dir, experiment)
         finally:
             work_q.task_done()
 
 
-def run_parallel(study: optuna.Study, n_trials: int, gpus, workers_per_gpu: int):
+def run_parallel(study: optuna.Study, n_trials: int, gpus, workers_per_gpu: int,
+                 sweep_dir: str, experiment: str):
     """Run n_trials concurrently across (gpus × workers_per_gpu) threads.
 
     Each worker thread pins its igm_run subprocess to a single GPU via
@@ -264,7 +288,7 @@ def run_parallel(study: optuna.Study, n_trials: int, gpus, workers_per_gpu: int)
         for w in range(workers_per_gpu):
             t = threading.Thread(
                 target=_worker_loop,
-                args=(study, gpu_id, work_q),
+                args=(study, gpu_id, work_q, sweep_dir, experiment),
                 name=f"gpu{gpu_id}-w{w}",
                 daemon=True,
             )
@@ -281,23 +305,19 @@ def run_parallel(study: optuna.Study, n_trials: int, gpus, workers_per_gpu: int)
 PARAM_NAMES = [
     "regularization_thk",
     "thkobs_std",
-    "regularization_slidingco",
-    "scaling_slidingco",
     "init_slidingco",
 ]
 LOG_PARAMS = {
     "regularization_thk",
     "thkobs_std",
-    "regularization_slidingco",
-    "scaling_slidingco",
     "init_slidingco",
 }
 
 
-def make_plots(study: optuna.Study):
+def make_plots(study: optuna.Study, plots_dir: str):
     import matplotlib.pyplot as plt
 
-    os.makedirs(PLOTS_DIR, exist_ok=True)
+    os.makedirs(plots_dir, exist_ok=True)
 
     completed = [
         t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE
@@ -316,7 +336,6 @@ def make_plots(study: optuna.Study):
                 **{p: t.params[p] for p in PARAM_NAMES},
                 "velsurf": t.values[0],
                 "thk": t.values[1],
-                "thk_regu": t.values[2],
                 "is_pareto": t.number in pareto_numbers,
             }
         )
@@ -355,15 +374,15 @@ def make_plots(study: optuna.Study):
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
-    path = os.path.join(PLOTS_DIR, "pareto_velsurf_thk.png")
+    path = os.path.join(plots_dir, "pareto_velsurf_thk.png")
     fig.savefig(path, dpi=150)
     plt.close(fig)
     print(f"  saved {path}")
 
     # 2. param vs each cost, with Pareto highlighted
-    costs_list = ["velsurf", "thk", "thk_regu"]
+    costs_list = ["velsurf", "thk"]
     fig, axes = plt.subplots(
-        len(PARAM_NAMES), len(costs_list), figsize=(13, 14), sharey="col"
+        len(PARAM_NAMES), len(costs_list), figsize=(9, 9), sharey="col"
     )
     for i, p in enumerate(PARAM_NAMES):
         for j, c in enumerate(costs_list):
@@ -395,13 +414,13 @@ def make_plots(study: optuna.Study):
     axes[0, 0].legend(fontsize=8, loc="upper right")
     fig.suptitle("Final DA cost terms vs each parameter (Pareto = red stars)")
     fig.tight_layout()
-    path = os.path.join(PLOTS_DIR, "param_vs_costs.png")
+    path = os.path.join(plots_dir, "param_vs_costs.png")
     fig.savefig(path, dpi=150)
     plt.close(fig)
     print(f"  saved {path}")
 
     # 3. Convergence curves (one subplot per cost term, Pareto highlighted)
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.5))
     for t in completed:
         is_p = t.number in pareto_numbers
         col = "red" if is_p else "gray"
@@ -421,7 +440,7 @@ def make_plots(study: optuna.Study):
     axes[0].plot([], [], color="gray", lw=0.4, label="dominated")
     axes[0].legend(fontsize=8)
     fig.tight_layout()
-    path = os.path.join(PLOTS_DIR, "convergence.png")
+    path = os.path.join(plots_dir, "convergence.png")
     fig.savefig(path, dpi=150)
     plt.close(fig)
     print(f"  saved {path}")
@@ -432,7 +451,18 @@ def make_plots(study: optuna.Study):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="NSGA-II DA sweep over 4 hyperparameters → 3 cost terms"
+        description="NSGA-II DA sweep over 3 hyperparameters → 3 cost terms"
+    )
+    parser.add_argument(
+        "--experiment",
+        type=str,
+        default=DEFAULT_EXPERIMENT,
+        help=(
+            "Hydra experiment name to sweep over (without .yaml). "
+            f"Default: {DEFAULT_EXPERIMENT}. The sweep dir and Optuna study "
+            "name are derived from this — flipping --experiment opens a "
+            "separate DB so search spaces don't get cross-loaded."
+        ),
     )
     parser.add_argument("--n-trials", type=int, default=DEFAULT_N_TRIALS)
     parser.add_argument("--population", type=int, default=DEFAULT_POPULATION)
@@ -446,8 +476,8 @@ def main():
     parser.add_argument(
         "--workers-per-gpu",
         type=int,
-        default=2,
-        help="Concurrent trials per GPU (default: 4).",
+        default=3,
+        help="Concurrent trials per GPU (default: 3).",
     )
     parser.add_argument(
         "--plots-only",
@@ -457,15 +487,21 @@ def main():
     args = parser.parse_args()
     gpus = [int(g) for g in args.gpus.split(",") if g.strip()]
 
-    os.makedirs(SWEEP_DIR, exist_ok=True)
+    paths = _experiment_paths(args.experiment)
+    sweep_dir = paths["sweep_dir"]
+    db_path = paths["db_path"]
+    plots_dir = paths["plots_dir"]
+    study_name = paths["study_name"]
 
-    storage = f"sqlite:///{DB_PATH}"
+    os.makedirs(sweep_dir, exist_ok=True)
+
+    storage = f"sqlite:///{db_path}"
     sampler = NSGAIISampler(population_size=args.population, seed=args.seed)
 
     study = optuna.create_study(
-        study_name="da_nsga2_sweep",
+        study_name=study_name,
         sampler=sampler,
-        directions=["minimize", "minimize", "minimize"],
+        directions=["minimize", "minimize"],
         storage=storage,
         load_if_exists=True,
     )
@@ -476,14 +512,16 @@ def main():
 
     total_workers = len(gpus) * args.workers_per_gpu
 
-    print("DA sweep — NSGA-II (velsurf, thk, thk_regu)")
+    print("DA sweep — NSGA-II (velsurf, thk)")
+    print(f"  Experiment         : {args.experiment}")
+    print(f"  Study name         : {study_name}")
     print(f"  Population size    : {args.population}")
     print(f"  Target n_trials    : {args.n_trials}")
     print(f"  Already completed  : {n_done}")
     print(f"  GPUs               : {gpus}")
     print(f"  Workers per GPU    : {args.workers_per_gpu}")
     print(f"  Concurrent trials  : {total_workers}")
-    print(f"  Results directory  : {SWEEP_DIR}")
+    print(f"  Results directory  : {sweep_dir}")
     print()
 
     n_remaining = max(args.n_trials - n_done, 0)
@@ -493,6 +531,8 @@ def main():
             n_trials=n_remaining,
             gpus=gpus,
             workers_per_gpu=args.workers_per_gpu,
+            sweep_dir=sweep_dir,
+            experiment=args.experiment,
         )
 
     completed = [
@@ -508,7 +548,6 @@ def main():
                 **{p: t.params[p] for p in PARAM_NAMES},
                 "velsurf": t.values[0],
                 "thk": t.values[1],
-                "thk_regu": t.values[2],
                 "is_pareto": t.number in pareto_numbers,
             }
             for t in completed
@@ -520,8 +559,8 @@ def main():
         print(f"{'=' * 100}")
         header = (
             f"  {'trial':>5}  {'reg_thk':>10}  {'thko_std':>9}  "
-            f"{'reg_slid':>10}  {'sc_slid':>10}  {'init_slid':>9}  "
-            f"{'velsurf':>9}  {'thk':>9}  {'thk_regu':>9}"
+            f"{'init_slid':>9}  "
+            f"{'velsurf':>9}  {'thk':>9}"
         )
         print(header)
         for r in rows:
@@ -529,14 +568,14 @@ def main():
                 print(
                     f"  {r['trial']:>5}  "
                     f"{r['regularization_thk']:>10.2e}  {r['thkobs_std']:>9.3f}  "
-                    f"{r['regularization_slidingco']:>10.2e}  {r['scaling_slidingco']:>10.2e}  "
                     f"{r['init_slidingco']:>9.3f}  "
-                    f"{r['velsurf']:>9.4f}  {r['thk']:>9.4f}  {r['thk_regu']:>9.4f}"
+                    f"{r['velsurf']:>9.4f}  {r['thk']:>9.4f}"
                 )
 
-        with open(os.path.join(SWEEP_DIR, "sweep_summary.json"), "w") as f:
+        with open(os.path.join(sweep_dir, "sweep_summary.json"), "w") as f:
             json.dump(
                 {
+                    "experiment": args.experiment,
                     "sampler": "NSGAIISampler",
                     "population": args.population,
                     "seed": args.seed,
@@ -548,7 +587,7 @@ def main():
                 indent=2,
             )
 
-        make_plots(study)
+        make_plots(study, plots_dir)
 
 
 if __name__ == "__main__":

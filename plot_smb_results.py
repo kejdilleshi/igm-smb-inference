@@ -79,7 +79,7 @@ def plot_thickness(run_dir, thk_obs, thk_opt, root):
     residual = thk_opt - thk_obs
 
     vmax_thk = max(np.nanmax(thk_obs), np.nanmax(thk_opt))
-    res_abs = np.nanmax(np.abs(residual))
+    res_abs = 50#np.nanmax(np.abs(residual))
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 

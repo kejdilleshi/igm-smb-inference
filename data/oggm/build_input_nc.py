@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """
 Build an IGM-ready input NetCDF from an OGGM gdir folder produced by
-fetch_oggm.py. Output layout matches data/input_argentiere.nc and is
-consumed unchanged by experiment/params_oggm_aletsch.yaml (and any future
-per-glacier params YAML).
+fetch_oggm.py + fetch_copdem.py. Output layout matches data/input_argentiere.nc
+and is consumed unchanged by experiment/params_oggm_aletsch.yaml (and any
+future per-glacier params YAML).
 
-Period anchor:
-  • DEM     ← OGGM `topo` (≈ SRTM Feb 2000 in European Alps)
-  • dhdt    ← Hugonnet 2021 mean dh/dt over 2000-01-01 → 2020-01-01 (m yr⁻¹)
-  • End DEM ← topo + dhdt × N_YEARS (default N_YEARS=20 → ~Jan 2020)
+Period anchor (NEW pipeline — anchored on 2020):
+  • End DEM   ← COP-DEM 30 (Copernicus, ≈2010-2019 in the European Alps),
+                fetched onto the gdir grid by fetch_copdem.py. Treated as the
+                ~2020 surface — this is the inversion's reference.
+  • dhdt      ← Hugonnet 2021 mean dh/dt over 2000-01-01 → 2020-01-01 (m yr⁻¹)
+  • Start DEM ← copdem30 − dhdt × N_YEARS (default N_YEARS=20 → ~Jan 2000),
+                derived rather than loaded from OGGM. OGGM's NASADEM `topo`
+                is still read for a sanity-check Δh print, then ignored.
 
 Velocities use Millan 2022 (2017-18 composite). ITS_LIVE was unavailable for
 Aletsch when this was written, so Millan is the fallback. Slidingco recovered
@@ -26,6 +30,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import netCDF4 as nc
+import rasterio
 from scipy.ndimage import distance_transform_edt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -92,6 +97,7 @@ def main(rgi_id):
         sys.exit(f"missing OGGM gdir: {gdir}  (run fetch_oggm.py first)")
     gridded = os.path.join(gdir, "gridded_data.nc")
     glathida = os.path.join(gdir, "glathida_data.csv")
+    copdem_tif = os.path.join(gdir, "copdem30.tif")
     out_nc = os.path.normpath(os.path.join(HERE, "..", f"input_{rgi_id.replace('-', '_')}.nc"))
 
     print(f"== Building IGM-ready NetCDF for {rgi_id}")
@@ -149,14 +155,35 @@ def main(rgi_id):
         sys.exit(f"on-glacier dhdt mean {dhdt_mean:.3f} outside expected range "
                  f"{EXPECTED_DHDT_MEAN_RANGE} — units may not be m/yr; bailing.")
 
-    # Construct start- and end-of-period surfaces.
-    usurfobs = topo.copy()                              # ≈ Jan 2000
-    usurf    = fill_nan_nearest(usurfobs)               # NaN-filled (emulator input)
-    usurfinfer = (topo + dhdt * N_YEARS).astype(np.float32)  # ≈ Jan 2020
-    # off-glacier usurfinfer should equal usurfobs (dhdt off-ice is noise);
-    # but we don't zero it: the inference cost gates on icemaskobs anyway.
+    # End-of-period DEM ← COP-DEM 30 (≈2010-2019), treated as the ~2020
+    # anchor. Start-of-period ← copdem30 − dhdt × N_YEARS (derived, not OGGM
+    # NASADEM). This inverts the prior pipeline, which anchored on NASADEM
+    # 2000 and extrapolated forward.
+    if not os.path.exists(copdem_tif):
+        sys.exit(f"missing COP-DEM file: {copdem_tif}  "
+                 f"(run fetch_copdem.py first)")
+    with rasterio.open(copdem_tif) as src:
+        copdem = src.read(1).astype(np.float32)
+        if (src.width, src.height) != (len(x), len(y)):
+            sys.exit(f"COP-DEM grid {src.width}×{src.height} doesn't match "
+                     f"gridded_data {len(x)}×{len(y)} — re-run fetch_copdem.py.")
+    # rasterio reads y-descending; flip to match our y-ascending internal arrays
+    # (gridded_data was flipped above iff flipy=True).
+    if flipy:
+        copdem = copdem[::-1, :]
 
-    print(f"   end-of-period surface: dh range "
+    diff_oi = copdem[on_ice] - topo[on_ice]
+    print(f"   COP-DEM 30 vs OGGM NASADEM on-ice: mean Δh = "
+          f"{float(np.nanmean(diff_oi)):.1f} m, "
+          f"std = {float(np.nanstd(diff_oi)):.1f} m, "
+          f"range [{float(np.nanmin(diff_oi)):.1f}, "
+          f"{float(np.nanmax(diff_oi)):.1f}] m")
+
+    usurfinfer = copdem.astype(np.float32)              # ≈ Jan 2020
+    usurfobs   = (copdem - dhdt * N_YEARS).astype(np.float32)  # ≈ Jan 2000 (derived)
+    usurf      = fill_nan_nearest(usurfobs)             # NaN-filled (emulator input)
+
+    print(f"   2000→2020 surface change: dh range "
           f"[{float(np.nanmin(usurfinfer - usurfobs)):.1f}, "
           f"{float(np.nanmax(usurfinfer - usurfobs)):.1f}] m total")
 
@@ -209,9 +236,9 @@ def main(rgi_id):
             v.standard_name = name
             v[:, :] = data
 
-        add("usurf",       usurf,      "m",       "Surface Topography (NaN-filled, OGGM topo ≈ 2000, emulator input)")
-        add("usurfobs",    usurfobs,   "m",       "Observed Surface Topography (raw OGGM topo, ≈ Jan 2000)")
-        add("usurfinfer",  usurfinfer, "m",       f"End-of-period Surface Topography (topo + Hugonnet dhdt × {N_YEARS:.0f}, ≈ Jan 2020)")
+        add("usurf",       usurf,      "m",       "Surface Topography (NaN-filled start surface ≈ 2000, emulator input)")
+        add("usurfobs",    usurfobs,   "m",       f"Observed Surface Topography (COP-DEM 30 − Hugonnet dhdt × {N_YEARS:.0f}, ≈ Jan 2000)")
+        add("usurfinfer",  usurfinfer, "m",       "End-of-period Surface Topography (COP-DEM 30, ≈ Jan 2020 anchor)")
         add("thkinit",     thkinit,    "m",       "Ice Thickness prior (Millan 2022)")
         add("thk",         thkinit,    "m",       "Ice Thickness (DA initial state, copy of thkinit)")
         add("thkobs",      thkobs,     "m",       "Ice Thickness Observations (GlaThiDa, rasterized)")
@@ -224,7 +251,8 @@ def main(rgi_id):
         ncf.title  = f"{rgi_id} input — OGGM-sourced, IGM-ready"
         ncf.source = f"Built from {gridded} + {glathida}"
         ncf.history = (f"Created by data/oggm/build_input_nc.py; "
-                       f"usurfinfer = topo + hugonnet_dhdt × {N_YEARS:.0f} yr")
+                       f"usurfinfer = COP-DEM 30 (≈2020 anchor); "
+                       f"usurfobs   = usurfinfer − hugonnet_dhdt × {N_YEARS:.0f} yr")
         ncf.pyproj_srs = ds.attrs.get("pyproj_srs", "")
 
     print(f"\nWrote {out_nc}")

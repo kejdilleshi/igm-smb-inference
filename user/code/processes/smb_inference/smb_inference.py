@@ -62,6 +62,23 @@ def _get_dx_dy(cfg, state):
     return dx, dy
 
 
+def _piecewise_linear_extrap(z, alts, vals):
+    """Piecewise-linear interpolation with linear extrapolation at both tails.
+
+    `alts` must be sorted ascending with at least 2 points. Within the observed
+    range this matches np.interp; outside it extrapolates using the slope of
+    the two nearest stakes at each tail.
+    """
+    out = np.interp(z, alts, vals).astype(np.float32)
+    slope_lo = (vals[1] - vals[0]) / (alts[1] - alts[0] + 1e-12)
+    slope_hi = (vals[-1] - vals[-2]) / (alts[-1] - alts[-2] + 1e-12)
+    lo = z < alts[0]
+    hi = z > alts[-1]
+    out[lo] = vals[0] + slope_lo * (z[lo] - alts[0])
+    out[hi] = vals[-1] + slope_hi * (z[hi] - alts[-1])
+    return out
+
+
 def _load_observation(smb_cfg, state, topg):
     """Load the observation target for inversion."""
     obs_cfg = smb_cfg.observations
@@ -136,9 +153,45 @@ def _run_profile_inversion(cfg, smb_cfg, glacier_model, observation, topg, H_ini
     dz = tf.constant(float(inv_cfg.dz), dtype=tf.float32)
     N_bins = int(tf.math.ceil((z_max - z_min) / dz).numpy()) + 1
 
-    # Trainable SMB profile
+    # Initial SMB profile (m ice eq./yr).
+    # If init_from_obs=true and a stake CSV is configured, initialize from the
+    # observed profile (piecewise-linear between stakes, linear extrapolation
+    # at both tails). Otherwise fall back to linspace(smb_init_low, high).
+    z_axis_init = float(z_min) + float(dz) * np.arange(N_bins)
+    init_from_obs = bool(getattr(inv_cfg, "init_from_obs", False))
+    smb_points_file_init = getattr(smb_cfg.observations, "smb_points_file", "") or ""
+
+    init_values = None
+    if init_from_obs and smb_points_file_init and os.path.exists(smb_points_file_init):
+        try:
+            alts_init, smbs_init = load_smb_point_obs(
+                smb_points_file_init, to_ice_eq=True
+            )
+            if alts_init.size >= 2:
+                order = np.argsort(alts_init)
+                alts_s = alts_init[order]
+                smbs_s = smbs_init[order]
+                init_values = _piecewise_linear_extrap(z_axis_init, alts_s, smbs_s)
+                print(
+                    f"[smb_inference] Initialized smb_vec from {alts_s.size} stakes "
+                    f"in {smb_points_file_init} (piecewise + linear extrapolation)"
+                )
+            else:
+                print(
+                    f"[smb_inference] init_from_obs requested but only "
+                    f"{alts_init.size} stake(s) loaded; falling back to linspace."
+                )
+        except Exception as e:
+            print(f"[smb_inference] init_from_obs failed ({e}); falling back to linspace.")
+
+    if init_values is None:
+        init_values = np.linspace(
+            float(inv_cfg.smb_init_low), float(inv_cfg.smb_init_high), N_bins,
+            dtype=np.float32,
+        )
+
     smb_vec = tf.Variable(
-        tf.linspace(float(inv_cfg.smb_init_low), float(inv_cfg.smb_init_high), N_bins),
+        tf.constant(init_values, dtype=tf.float32),
         trainable=True,
         dtype=tf.float32,
     )

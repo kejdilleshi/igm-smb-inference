@@ -18,8 +18,10 @@ existing DA + SMB-inference pipeline (params_aletsch.yaml) can ingest it:
   icemask     — glacier outline (from source input.nc)
   icemaskobs  — icemask ∧ obs non-NaN (recomputed)
 
-Period defaults to 2009 → 2017 (a stand-in for the requested 2009 → 2023; the
-end DEM will be swapped to a real 2023 DEM later by re-running this script).
+Period: 2009 → 2017 (8 years). Both DEMs come from igm-examples/aletsch's
+past_surf.nc — they are the swisstopo-derived multi-epoch surfaces used in
+the original IGM Aletsch tutorial, considered more accurate than the
+Hugonnet-derived 2020 surface for this glacier.
 """
 
 import os
@@ -34,7 +36,7 @@ SRC_PAST  = "/home/klleshi/Documents/igm-examples/aletsch/data/past_surf.nc"
 OUT_NC    = os.path.normpath(os.path.join(HERE, "..", "input_aletsch.nc"))
 
 START_SURF = "surf_2009"     # → usurf / usurfobs
-END_SURF   = "surf_2017"     # → usurfinfer (stand-in for surf_2023)
+END_SURF   = "surf_2017"     # → usurfinfer
 
 
 def to_nan(a):

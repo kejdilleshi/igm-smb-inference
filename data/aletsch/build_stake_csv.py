@@ -10,7 +10,8 @@ of END+1:
   1. Average annual mass balance Ba (mm w.e.) across all bin-years in window.
   2. Convert mm w.e. → m w.e.
   3. Place ONE synthetic stake at the (X, Y) centroid of the on-glacier pixels
-     of input_aletsch.nc whose 2009 surface elevation falls inside the bin.
+     of input_aletsch.nc whose start-of-period (e.g. 1999) surface elevation
+     falls inside the bin.
   4. Record Alt = pixel-centroid elevation (mean of usurf over the same set).
 
 Output columns (matching SMB_argentiere_2012-2021_utm32N.csv):
@@ -39,7 +40,10 @@ OUT_CSV     = os.path.join(HERE, f"SMB_aletsch_{START_YEAR}-{END_YEAR}_utm32N.cs
 
 
 def load_glamos(path):
-    # File has 9 banner/header lines; the real header row starts with "glacier name".
+    """The GLAMOS CSV has 6 lines of preamble, then a human-readable header
+    line (line 7), a snake-case alias row (line 8), a units row (line 9),
+    and finally the data. We read from line 7, drop the alias + units rows,
+    and rename to snake_case for convenience."""
     skip = 0
     with open(path) as f:
         for i, line in enumerate(f):
@@ -47,9 +51,19 @@ def load_glamos(path):
                 skip = i
                 break
     df = pd.read_csv(path, skiprows=skip, low_memory=False)
-    # Drop the two annotation rows that follow the header (the (according to ...)
-    # and units rows).
-    df = df[df["glacier id"].astype(str).str.match(r"^[A-Z]")]
+    df = df[df["glacier id"].astype(str).str.match(r"^[A-Z]")].copy()
+    df.rename(columns={
+        "start date of observation": "date_start",
+        "end date of winter observation": "date_end_winter",
+        "end date of observation": "date_end",
+        "winter mass balance": "Bw",
+        "summer mass balance": "Bs",
+        "annual mass balance": "Ba",
+        "area of elevation bin": "area",
+        "lower elevation of bin": "h_min",
+        "upper elevation of bin": "h_max",
+        "glacier id": "glacier_id",
+    }, inplace=True)
     return df
 
 
@@ -60,7 +74,7 @@ def main():
         sys.exit(f"missing input NetCDF (run build_input_nc.py first): {INPUT_NC}")
 
     df = load_glamos(GLAMOS_CSV)
-    df = df[df["glacier id"] == GLACIER_ID].copy()
+    df = df[df["glacier_id"] == GLACIER_ID].copy()
     for c in ("date_start", "date_end"):
         df[c] = pd.to_datetime(df[c], errors="coerce")
     for c in ("Bw", "Bs", "Ba", "h_min", "h_max", "area"):

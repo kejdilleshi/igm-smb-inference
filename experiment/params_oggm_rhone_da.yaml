@@ -1,6 +1,10 @@
 # @package _global_
 #
-
+# DA-only variant of params_oggm_rhone.yaml — used by optuna_sweep_da_nsga.py
+# to tune (regularization.thk, fitting.thkobs_std, iceflow.physics.init_slidingco).
+# The smb_inference block is dropped because the sweep optimizes DA cost terms
+# only (velsurf, thk). Once the sweep finishes, fold the chosen values back
+# into params_oggm_rhone.yaml for the full DA + SMB run.
 
 core:
   hardware:
@@ -15,17 +19,17 @@ defaults:
 
 inputs:
   local:
-    filename: input_RGI60_11.01450.nc
+    filename: input_RGI60_11.01238.nc
     crop:
-      xmin: -7170.0
-      xmax: 5611.0
-      ymin: 5137710.0
-      ymax: 5157068.0
+      xmin: -3053.0
+      xmax: 2907.0
+      ymin: 5157422.0
+      ymax: 5167672.0
 
 processes:
   iceflow:
     physics:
-      init_slidingco: 0.45
+      init_slidingco: 0.154
       sliding:
         weertman:
           u_ref: 100.0
@@ -77,9 +81,9 @@ processes:
       patience: 200
     fitting:
       velsurfobs_std: 2.1
-      thkobs_std: 11.964981600016369
+      thkobs_std: 16.0
     regularization:
-      thk: 328.17251227955273
+      thk: 328.0
       smooth_anisotropy_factor: 1.0
       convexity_weight: 0.0
       to_regularize: thk

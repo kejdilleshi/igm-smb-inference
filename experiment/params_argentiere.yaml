@@ -124,10 +124,11 @@ processes:
       dz: 200.0
       smb_init_low: -10.0
       smb_init_high: 1.0
+      init_from_obs: true
     optimization:
       # optimizer: 'adam' or 'lbfgs'
-      optimizer: lbfgs
-      nbitmax: 50
+      optimizer: adam
+      nbitmax: 1
       learning_rate: 0.1          # Adam only
       regularisation: 0.05
       early_stop_patience: -1

@@ -28,8 +28,9 @@ observations:
 inversion:
   method: profile            # Inversion method: 'profile' (1D elevation-dependent SMB)
   dz: 100.0                 # Elevation bin spacing (m) for profile method
-  smb_init_low: -5.0        # Initial SMB at lowest elevation (m ice eq/yr)
-  smb_init_high: 2.0        # Initial SMB at highest elevation (m ice eq/yr)
+  smb_init_low: -5.0        # Initial SMB at lowest elevation (m ice eq/yr) — used when init_from_obs is false or no stakes
+  smb_init_high: 2.0        # Initial SMB at highest elevation (m ice eq/yr) — used when init_from_obs is false or no stakes
+  init_from_obs: false      # If true, initialize smb_vec from observations.smb_points_file (piecewise-linear, extrapolated at tails); falls back to linspace if file is absent
 
 # Optimization parameters
 optimization:
