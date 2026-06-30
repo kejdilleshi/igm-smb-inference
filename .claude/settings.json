@@ -35,7 +35,12 @@
       "Bash(/home/klleshi/miniconda3/envs/igm-pretrain/bin/python -c 'import optuna; from optuna.samplers import NSGAIISampler; print\\('\\\\''optuna'\\\\'', optuna.__version__, '\\\\''| NSGAIISampler OK'\\\\''\\)')",
       "Bash(/home/klleshi/miniconda3/envs/igm-pretrain/bin/python -c ' *)",
       "Bash(PATH=/home/klleshi/miniconda3/envs/igm-pretrain/bin:__TRACKED_VAR__ /home/klleshi/miniconda3/envs/igm-pretrain/bin/python optuna_sweep_da_velthk.py --plots-only)",
-      "Bash(echo \"exit=$? ; pdf:\")"
+      "Bash(echo \"exit=$? ; pdf:\")",
+      "Bash(ps -eo pid,etime,cmd)",
+      "Bash(cd /home/klleshi/Documents/igm-smb-inference *)"
+    ],
+    "additionalDirectories": [
+      "/home/klleshi/Documents/igm-smb-inference/.git"
     ]
   }
 }
