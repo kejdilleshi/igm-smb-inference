@@ -18,3 +18,4 @@ vtp/
 *.xml
 sweep_result*
 outputs/
+experiment/*_smbonly.yaml

@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(~/miniconda3/envs/igm/bin/python -c ' *)",
+      "Bash(~/miniconda3/envs/igm/bin/python pipeline/smb_vs_continuity.py --run results/rhone_insitu/final/smb_inference --stakes data/rhone_insitu/SMB_rhone_insitu_2007-2016_rawstakes_utm32N.csv --cluster-min-years 10 --title 'Rhone \\(in-house 2007-2016\\)')",
+      "Bash(~/miniconda3/envs/igm/bin/python pipeline/smb_vs_continuity.py --run results/aletsch_insitu/final/smb_inference --stakes data/aletsch_insitu/SMB_aletsch_insitu_2009-2017_rawstakes_utm32N.csv --cluster-min-years 9 --title 'Aletsch \\(in-house 2009-2017\\)')",
+      "Bash(~/miniconda3/envs/igm/bin/python pipeline/smb_vs_continuity.py --run results/rhone_insitu/final/smb_inference --stakes data/rhone_insitu/SMB_rhone_insitu_2007-2016_rawstakes_utm32N.csv --title 'Rhone \\(in-house 2007-2016\\)')",
+      "Bash(~/miniconda3/envs/igm/bin/python pipeline/smb_vs_continuity.py --run results/aletsch_insitu/final/smb_inference --stakes data/aletsch_insitu/SMB_aletsch_insitu_2009-2017_rawstakes_utm32N.csv --title 'Aletsch \\(in-house 2009-2017\\)')",
+      "Bash(~/miniconda3/envs/igm/bin/python pipeline/run_pipeline.py --glacier rhone_insitu --from-stage final --da-reg-thk 300 --init-slidingco 0.1 --init-arrhenius 78 --dry-run)",
+      "Bash(python -c \"import optuna; print\\('optuna', optuna.__version__\\)\")",
+      "Bash(/home/klleshi/miniconda3/envs/igm-pretrain/bin/python -c \"import optuna; print\\('igm-pretrain optuna', optuna.__version__\\)\")",
+      "Bash(/home/klleshi/miniconda3/envs/igm/bin/python -c \"import optuna; print\\('igm optuna', optuna.__version__\\)\")",
+      "Bash(/home/klleshi/miniconda3/envs/igm-pretrain/bin/python pipeline/sensitivity_da_params.py)",
+      "Bash(python -c ' *)",
+      "Bash(PATH=/home/klleshi/miniconda3/envs/igm-pretrain/bin:__TRACKED_VAR__ python /tmp/claude-10538/-home-klleshi-Documents-igm-smb-inference/c97db374-2929-45dd-96b6-9e433328d282/scratchpad/plot_sens.py)",
+      "Bash(PATH=/home/klleshi/miniconda3/envs/igm-pretrain/bin:__TRACKED_VAR__ python -c 'import matplotlib; print\\('\\\\''matplotlib'\\\\'', matplotlib.__version__\\)')",
+      "Bash(PATH=/home/klleshi/miniconda3/envs/igm-pretrain/bin:__TRACKED_VAR__ python -)",
+      "Bash(PATH=/home/klleshi/miniconda3/envs/igm-pretrain/bin:__TRACKED_VAR__ python /tmp/claude-10538/-home-klleshi-Documents-igm-smb-inference/c97db374-2929-45dd-96b6-9e433328d282/scratchpad/aletsch_dem.py)",
+      "Bash(PATH=/home/klleshi/miniconda3/envs/igm-pretrain/bin:__TRACKED_VAR__ python3 -c ' *)",
+      "Bash(grep -oP '@\\\\w+\\\\{\\\\K[^,]+' BIBLIO/biblio.bib)",
+      "Bash(command -v pdflatex)",
+      "Bash(pdflatex -interaction=nonstopmode -halt-on-error -draftmode main.tex)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(/home/klleshi/miniconda3/envs/tex/bin/tectonic -k --keep-logs main.tex)",
+      "Bash(python3 -c \"import re;d=open\\('main.pdf','rb'\\).read\\(\\);print\\('Pages:',len\\(re.findall\\(rb'/Type\\\\s*/Page[^s]',d\\)\\)\\)\")",
+      "Bash(python3 -c \"import re;d=open\\('main.pdf','rb'\\).read\\(\\);m=re.search\\(rb'/Count\\\\s+\\(\\\\d+\\)',d\\);print\\('Pages:',m.group\\(1\\).decode\\(\\) if m else '?'\\)\")",
+      "Bash(grep -oiE \"\\(Reference|Citation\\) \\\\`[^']+'\")",
+      "Bash(/home/klleshi/miniconda3/envs/tex/bin/tectonic --version)",
+      "Bash(~/miniconda3/envs/tex/bin/tectonic -k main.tex)",
+      "Bash(~/miniconda3/envs/tex/bin/tectonic --print -k main.tex)",
+      "Bash(nvidia-smi --query-gpu=index,memory.used,utilization.gpu --format=csv)",
+      "Bash(PATH=/home/klleshi/miniconda3/envs/igm-pretrain/bin:__TRACKED_VAR__ /home/klleshi/miniconda3/envs/igm-pretrain/bin/python -)",
+      "Bash(nvidia-smi --query-gpu=index,memory.used,memory.total,utilization.gpu --format=csv)",
+      "Bash(/home/klleshi/miniconda3/envs/igm-pretrain/bin/python -c 'import optuna; from optuna.samplers import NSGAIISampler; print\\('\\\\''optuna'\\\\'', optuna.__version__, '\\\\''| NSGAIISampler OK'\\\\''\\)')",
+      "Bash(/home/klleshi/miniconda3/envs/igm-pretrain/bin/python -c ' *)",
+      "Bash(PATH=/home/klleshi/miniconda3/envs/igm-pretrain/bin:__TRACKED_VAR__ /home/klleshi/miniconda3/envs/igm-pretrain/bin/python optuna_sweep_da_velthk.py --plots-only)",
+      "Bash(echo \"exit=$? ; pdf:\")"
+    ]
+  }
+}

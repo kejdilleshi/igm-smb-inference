@@ -129,7 +129,7 @@ processes:
       from_state: true
     observations:
       state_variable: usurfinfer
-      smb_points_file: ${hydra:runtime.cwd}/data/aletsch/SMB_aletsch_2009-2020_rawstakes_utm32N.csv
+      smb_points_file: ${hydra:runtime.cwd}/data/aletsch/SMB_aletsch_2009-2017_rawstakes_utm32N.csv
     inversion:
       method: profile
       dz: 200.0

@@ -1,0 +1,179 @@
+# @package _global_
+#
+# SMB inference on Glacier d'Argentière — IN-HOUSE variant.
+# French glacier (NOT in OGGM/GLAMOS). Period: 2012 → 2021 (9 years), driven
+# by in-house IGE data baked into data/input_argentiere.nc: measured bedrock +
+# thickness, DEMs 2012 (usurf/usurfobs) and 2021 (usurfinfer), surface
+# velocities. 100 m grid, 90×89.
+#
+# Driven by run_pipeline.py (--glacier argentiere --from-stage final). Unlike the
+# OGGM/insitu glaciers (velocity-only DA), Argentière has MEASURED radar
+# thickness (thkobs), so the DA fits it directly — this reproduces the good fit
+# of outputs/2026-04-29/08-42-26:
+#   1. data_assimilation — invert thk + slidingco against velsurf / icemask / THK
+#                          (thk in the cost ⇒ geometry honours the radar profiles).
+#   2. smb_inference     — forward-run 2012 → 2021, fit a 1-D SMB(z) profile
+#                          (dz=200 m) to match the 2021 surface, against the
+#                          in-house stake balances in
+#                          data/argentiere/SMB_argentiere_2012-2021_utm32N.csv.
+#
+# The Optuna sweep + DA reg.thk L-curve stages are velocity-only by design, so
+# they are SKIPPED here: run --from-stage final with the known-good params from
+# 08-42-26 (init_slidingco≈0.4617, init_arrhenius=78, reg.thk≈328).
+#
+# NOTE: Argentière is not a GLAMOS glacier, so the pipeline's compare_smb.py
+# step (GLAMOS elevation-bin overlay) is skipped automatically — the stake fit
+# is internal to smb_inference and plotted by plot_smb_results.py.
+
+core:
+  hardware:
+    visible_gpus: [0]
+
+defaults:
+  - override /inputs:
+    - local
+  - override /processes:
+    - iceflow
+    - data_assimilation
+    - smb_inference
+
+inputs:
+  local:
+    filename: input_argentiere.nc
+    crop:
+      xmin: 340310.0
+      xmax: 349366.0
+      ymin: 5085870.0
+      ymax: 5094774.0
+
+processes:
+  iceflow:
+    physics:
+      init_slidingco: 0.46171837516132724
+      init_arrhenius: 78.0
+      sliding:
+        weertman:
+          u_ref: 100.0
+    emulator:
+      network:
+        architecture: SIADecompNet
+    numerics:
+      Nz: 2
+      basis_vertical: molho
+      basis_horizontal : q1
+      precision: single
+    method: unified
+    unified:
+      display:
+        print_cost: true
+        print_cost_freq: 50
+      inputs: [thk, usurf, slidingco, arrhenius, dX]
+      bcs: []
+      mapping: network
+      optimizer: lbfgs
+      lbfgs:
+        memory: 20
+      line_search: hager-zhang
+      nbit: -1
+      nbit_warmup: -1
+      nbit_init: -1
+      retrain_freq: 1000000
+      network:
+        pretrained_path: "/home/klleshi/Documents/igm-examples/aletsch/SIADecompNet_18x80_dil1-32/"
+        pretrained: true
+        print_summary: true
+        old_format: false
+
+  data_assimilation:
+    # Thickness-aware DA reproducing outputs/2026-04-29/08-42-26: thk is in the
+    # cost and slidingco is a second control, so the inversion honours the
+    # measured radar thickness (thkobs) instead of letting velocity + reg.thk
+    # drift the geometry away from it (the velocity-only failure mode).
+    control_list:
+      - thk
+      - slidingco
+    cost_list:
+      - velsurf
+      - icemask
+      - thk
+    optimization:
+      nbitmin: 50
+      nbitmax: 1000
+      step_size: 0.9
+      retrain_iceflow_model: true
+      fix_opti_normalization_issue: true
+      obstacle_constraint: ['reproject']
+      step_size_decay: 0.95
+      pertubate: True
+      patience: 200
+    fitting:
+      usurfobs_std: 2.0
+      velsurfobs_std: 2.1
+      thkobs_std: 11.964981600016369
+      uniformize_thkobs: true
+    regularization:
+      thk: 328.0
+      thk_1st_der: 100.0
+      thk_2nd_der: 1000000.0
+      slidingco: 10491954.33226791
+      arrhenius: 10.0
+      smooth_anisotropy_factor: 1.0
+      convexity_weight: 0.0
+      to_regularize: thk
+    scaling:
+      thk: 1
+      usurf: 0.5
+      slidingco: 0.023270677083837805
+      arrhenius: 0.1
+    output:
+      plot2d_live: false
+      save_result_in_ncdf: geology-optimized.nc
+      save_iterat_in_ncdf: true
+      vars_to_save:
+        - usurf
+        - thk
+        - slidingco
+        - velbase_mag
+        - velsurf_mag
+        - velsurfobs_mag
+        - divflux
+        - icemask
+        - arrhenius
+
+  smb_inference:
+    t_start: 2012.0
+    ttot: 2021.0
+    dtmax: 1.0
+    cfl: 0.2
+    emulator:
+      from_state: true
+    observations:
+      state_variable: usurfinfer
+      smb_points_file: ${hydra:runtime.cwd}/data/argentiere/SMB_argentiere_2012-2021_utm32N.csv
+    inversion:
+      method: profile
+      dz: 200.0
+      smb_init_low: -10.0
+      smb_init_high: 1.0
+    optimization:
+      optimizer: lbfgs
+      nbitmax: 50
+      learning_rate: 0.1
+      regularisation: 0.05
+      early_stop_patience: 20
+      early_stop_threshold: 0.001
+      retrain_emulator_freq: 50000
+      early_retrain_iters: 1
+      lbfgs_memory: 10
+      lbfgs_tolerance: 1.0e-6
+      lbfgs_x_tolerance: 0.0
+      # L-BFGS early-convergence knob (early_stop_* above are Adam-only).
+      # Relaxed 1.0e-3 -> 1.0e-5 so it doesn't stop as early as iter 18.
+      lbfgs_f_relative_tolerance: 1.0e-5
+
+    output:
+      vis_freq: 5.0
+      visualize: false
+      outdir: ./smb_inference
+      plot_loss: true
+      save_results: true

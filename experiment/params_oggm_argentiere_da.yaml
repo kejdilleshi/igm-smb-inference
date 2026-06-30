@@ -1,0 +1,107 @@
+# @package _global_
+#
+# DA-only sweep stage for Glacier d'Argentière — IN-HOUSE variant.
+# French glacier (NOT in OGGM/GLAMOS): all fields are in-house measurements
+# baked into data/input_argentiere.nc (measured bedrock + thickness, IGE
+# DEMs 2012/2021, surface velocities). 100 m grid, 90×89.
+#
+# Velocity-only DA (cost_list = [velsurf, icemask], NO thickness obs — even
+# though thkobs exists, we mirror the rhone/aletsch insitu pattern and keep
+# the measured thickness for validation only). Sweep target for
+# optuna_sweep_da_nsga.py (--experiment params_oggm_argentiere_da).
+
+core:
+  hardware:
+    visible_gpus: [0]
+
+defaults:
+  - override /inputs:
+    - local
+  - override /processes:
+    - iceflow
+    - data_assimilation
+
+inputs:
+  local:
+    filename: input_argentiere.nc
+    crop:
+      xmin: 340310.0
+      xmax: 349366.0
+      ymin: 5085870.0
+      ymax: 5094774.0
+
+processes:
+  iceflow:
+    physics:
+      init_slidingco: 0.46
+      sliding:
+        weertman:
+          u_ref: 100.0
+    emulator:
+      network:
+        architecture: SIADecompNet
+    numerics:
+      Nz: 2
+      basis_vertical: molho
+      basis_horizontal : q1
+      precision: single
+    method: unified
+    unified:
+      display:
+        print_cost: true
+        print_cost_freq: 50
+      inputs: [thk, usurf, slidingco, arrhenius, dX]
+      bcs: []
+      mapping: network
+      optimizer: lbfgs
+      lbfgs:
+        memory: 20
+      line_search: hager-zhang
+      nbit: -1
+      nbit_warmup: -1
+      nbit_init: -1
+      retrain_freq: 1000000
+      network:
+        pretrained_path: "/home/klleshi/Documents/igm-examples/aletsch/SIADecompNet_18x80_dil1-32/"
+        pretrained: true
+        print_summary: true
+        old_format: false
+
+  data_assimilation:
+    control_list:
+      - thk
+    cost_list:
+      - velsurf
+      - icemask
+    optimization:
+      nbitmax: 1000
+      step_size: 0.9
+      retrain_iceflow_model: true
+      fix_opti_normalization_issue: true
+      obstacle_constraint: ['reproject']
+      step_size_decay: 0.95
+      pertubate: True
+      patience: 200
+    fitting:
+      velsurfobs_std: 2.1
+    regularization:
+      thk: 328.0
+      smooth_anisotropy_factor: 1.0
+      convexity_weight: 0.0
+      to_regularize: thk
+    scaling:
+      thk: 1
+    output:
+      plot2d_live: false
+      save_result_in_ncdf: geology-optimized.nc
+      save_iterat_in_ncdf: true
+      vars_to_save:
+        - usurf
+        - thk
+        - slidingco
+        - velbase_mag
+        - velsurf_mag
+        - velsurfobs_mag
+        - divflux
+        - icemask
+        - arrhenius

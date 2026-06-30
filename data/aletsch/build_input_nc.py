@@ -97,6 +97,14 @@ def main():
     # gates on ~is_nan(usurfinfer) just like Argentière).
     usurfinfer = surf_end.astype(np.float32)
 
+    # dhdt = geodetic elevation-change rate (surf_end − surf_start)/Δyears from
+    # the two swisstopo DEMs. This is the in-house, less-smooth alternative to
+    # Hugonnet dh/dt; consumed by the SMB-inference mass-balance diagnostics.
+    period_years = float(int(END_SURF.split("_")[1]) - int(START_SURF.split("_")[1]))
+    dhdt = ((surf_end - surf_start) / period_years).astype(np.float32)
+    print(f"dhdt: ({END_SURF}−{START_SURF})/{period_years:.0f} yr, on-glacier mean "
+          f"{np.nanmean(dhdt[icemask > 0.5]):.3f} m/yr")
+
     # icemaskobs: gate DA costs to pixels where every observation is finite.
     invalid_obs = (np.isnan(usurfobs) | np.isnan(vx) | np.isnan(vy)
                    | np.isnan(usurfinfer))
@@ -129,6 +137,7 @@ def main():
         add("usurf",       usurf,      "m",        f"Surface Topography (NaN-filled, {START_SURF}, emulator input)")
         add("usurfobs",    usurfobs,   "m",        f"Observed Surface Topography (raw {START_SURF}, NaNs preserved)")
         add("usurfinfer",  usurfinfer, "m",        f"End-of-period Surface Topography ({END_SURF}, SMB-inference target)")
+        add("dhdt",        dhdt,       "m/y",      f"Geodetic dh/dt ({END_SURF}−{START_SURF})/{int(period_years)} yr (swisstopo DEMs)")
         add("thkinit",     thkinit,    "m",        f"Ice Thickness prior at {START_SURF} epoch (modern thk + ΔDEM)")
         add("thk",         thkinit,    "m",        f"Ice Thickness (DA initial state, copy of thkinit)")
         add("thkobs",      thkobs,     "m",        "Ice Thickness Observations (GPR, from igm-examples/aletsch)")

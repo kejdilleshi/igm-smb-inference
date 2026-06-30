@@ -4,15 +4,21 @@
 # Mirrors params_oggm_aletsch.yaml. Inputs were built end-to-end from OGGM + COP-DEM:
 #   data/oggm/fetch_oggm.py    RGI60-11.01238  — L3 prepro + Hugonnet + Millan22 + GlaThiDa
 #   data/oggm/fetch_copdem.py  RGI60-11.01238  — Copernicus DEM 30 (~2020) onto gdir grid (AWS S3)
-#   data/oggm/build_input_nc.py RGI60-11.01238 — assemble data/input_RGI60_11.01238.nc with
+#   data/oggm/build_input_nc.py RGI60-11.01238 --n-years 14
+#                                              — assemble data/input_RGI60_11.01238.nc with
 #                                                usurfinfer = COP-DEM 30 (≈2020 anchor),
-#                                                usurfobs   = usurfinfer − Hugonnet dhdt × 20 (≈2000)
-#   data/rhone/build_raw_stakes_csv.py         — raw GLAMOS stake CSV (163 stakes, 2009-2020)
-#                                                for diagnostic profile overlay only (NOT used in cost)
+#                                                usurfobs   = usurfinfer − Hugonnet dhdt × 14 (≈2006)
+#   data/rhone/build_raw_stakes_csv.py --start 2006 --end 2020
+#                                              — raw GLAMOS stake CSV (2006-2020) for the
+#                                                Kneib-2024-style validation overlay (NOT in cost)
+#
+# Why 2006-2020: the Rhone GLAMOS stake network starts in 2006. Matching the
+# inversion window to the stake window gives a like-for-like comparison
+# (multi-year mean profile vs per-stake multi-year mean).
 #
 # Pipeline:
 #   1. data_assimilation — invert thk + slidingco against velsurf / icemask / thk(GlaThiDa)
-#   2. smb_inference     — forward-run 2000 → 2020, fit a 1-D SMB(z) profile (dz=200 m)
+#   2. smb_inference     — forward-run 2006 → 2020, fit a 1-D SMB(z) profile (dz=200 m)
 #                          to match the COP-DEM 30 (~2020) surface
 #
 # Grid: OGGM local TMerc (lon_0=8.3965°, lat_0=0°), dx=66 m, 220×285 native,
@@ -83,11 +89,9 @@ processes:
   data_assimilation:
     control_list:
       - thk
-      # - slidingco
     cost_list:
       - velsurf
       - icemask
-      - thk
     optimization:
       nbitmax: 1000
       step_size: 0.9
@@ -99,16 +103,14 @@ processes:
       patience: 200
     fitting:
       velsurfobs_std: 2.1
-      thkobs_std: 7.621
+      thkobs_std: 4.1
     regularization:
       thk: 537.0
-      # slidingco: 2.0
       smooth_anisotropy_factor: 1.0
       convexity_weight: 0.0
       to_regularize: thk
     scaling:
       thk: 1
-      # slidingco: 0.024970737145052723
     output:
       plot2d_live: false
       save_result_in_ncdf: geology-optimized.nc
@@ -125,7 +127,7 @@ processes:
         - arrhenius
 
   smb_inference:
-    t_start: 2000.0
+    t_start: 2006.0
     ttot: 2020.0
     dtmax: 1.0
     cfl: 0.2
@@ -133,7 +135,7 @@ processes:
       from_state: true
     observations:
       state_variable: usurfinfer
-      smb_points_file: ${hydra:runtime.cwd}/data/rhone/SMB_rhone_2009-2020_rawstakes_utm32N.csv
+      smb_points_file: ${hydra:runtime.cwd}/data/rhone/SMB_rhone_2006-2020_rawstakes_utm32N.csv
     inversion:
       method: profile
       dz: 200.0
@@ -144,7 +146,7 @@ processes:
       optimizer: lbfgs
       nbitmax: 50
       learning_rate: 0.1
-      regularisation: 0.05
+      regularisation: 0.01
       early_stop_patience: 3
       early_stop_threshold: 0.01
       retrain_emulator_freq: 50000

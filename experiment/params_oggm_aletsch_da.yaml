@@ -65,7 +65,6 @@ processes:
     cost_list:
       - velsurf
       - icemask
-      - thk
     optimization:
       nbitmax: 1000
       step_size: 0.9

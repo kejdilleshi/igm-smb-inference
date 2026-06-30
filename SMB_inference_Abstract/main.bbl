@@ -1,0 +1,146 @@
+\begin{thebibliography}{24}
+\providecommand{\natexlab}[1]{#1}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[\protect\citename{Beraud and others, }2022]{beraud2023}
+Beraud L, Cusicanqui D, Rabatel A, Brun F, Vincent C and Six D (2022)
+  Glacier-wide seasonal and annual geodetic mass balances from {P}l\'eiades
+  stereo images: application to the {G}lacier d'{A}rgenti\`ere, {F}rench
+  {A}lps. \emph{Journal of Glaciology}, 1--13 (\doi {10.1017/jog.2022.79})
+
+\bibitem[\protect\citename{Berthier and Vincent, }2012]{berthier2012}
+Berthier E and Vincent C (2012) Relative contribution of surface mass-balance
+  and ice-flux changes to the accelerated thinning of {M}er de {G}lace,
+  {F}rench {A}lps, over 1979--2008. \emph{Journal of Glaciology},
+  \textbf{58}(209), 501--512 (\doi {10.3189/2012JoG11J083})
+
+\bibitem[\protect\citename{Bisset and others, }2020]{bisset2020}
+Bisset RR, Dehecq A, Goldberg DN, Huss M, Bingham RG and Gourmelen N (2020)
+  Reversed surface-mass-balance gradients on {H}imalayan debris-covered
+  glaciers inferred from remote sensing. \emph{Remote Sensing},
+  \textbf{12}(10), 1563 (\doi {10.3390/rs12101563})
+
+\bibitem[\protect\citename{Brun and others, }2018]{brun2018}
+Brun F, Wagnon P, Berthier E, Shea JM, Immerzeel WW, Kraaijenbrink PDA, Vincent
+  C, Reverchon C, Shrestha D and Arnaud Y (2018) Ice cliff contribution to the
+  tongue-wide ablation of {C}hangri {N}up {G}lacier, {N}epal, central
+  {H}imalaya. \emph{The Cryosphere}, \textbf{12}(11), 3439--3457 (\doi
+  {10.5194/tc-12-3439-2018})
+
+\bibitem[\protect\citename{Cogley and others, }2011]{cogley2011}
+Cogley JG, Hock R, Rasmussen LA, Arendt AA, Bauder A, Braithwaite RJ, Jansson
+  P, Kaser G, M\"oller M, Nicholson L and Zemp M (2011) Glossary of glacier
+  mass balance and related terms. Technical report, {UNESCO-IHP}, Paris
+
+\bibitem[\protect\citename{Cuffey and Paterson, }2010]{cuffey2010}
+Cuffey KM and Paterson WSB (2010) \emph{The Physics of Glaciers}. Elsevier,
+  Amsterdam, 4 edition
+
+\bibitem[\protect\citename{Farinotti and others, }2019]{farinotti2019}
+Farinotti D, Huss M, F\"urst JJ, Landmann J, Machguth H, Maussion F and Pandit
+  A (2019) A consensus estimate for the ice thickness distribution of all
+  glaciers on {E}arth. \emph{Nature Geoscience}, \textbf{12}(3), 168--173 (\doi
+  {10.1038/s41561-019-0300-3})
+
+\bibitem[\protect\citename{Hugonnet and others, }2021]{hugonnet2021}
+Hugonnet R, McNabb R, Berthier E, Menounos B, Nuth C, Girod L, Farinotti D,
+  Huss M, Dussaillant I, Brun F and K\"a\"ab A (2021) Accelerated global
+  glacier mass loss in the early twenty-first century. \emph{Nature},
+  \textbf{592}(7856), 726--731 (\doi {10.1038/s41586-021-03436-z})
+
+\bibitem[\protect\citename{J\'ohannesson and others, }1989]{johannesson1989}
+J\'ohannesson T, Raymond C and Waddington E (1989) Time-scale for adjustment of
+  glaciers to changes in mass balance. \emph{Journal of Glaciology},
+  \textbf{35}(121), 355--369 (\doi {10.3189/S002214300000928X})
+
+\bibitem[\protect\citename{Jouvet, }2023]{jouvet2023}
+Jouvet G (2023) Inversion of a {S}tokes glacier flow model emulated by deep
+  learning. \emph{Journal of Glaciology}, \textbf{69}(273), 13--26 (\doi
+  {10.1017/jog.2022.41})
+
+\bibitem[\protect\citename{Jouvet and Cordonnier, }2023]{jouvet_cordonnier2023}
+Jouvet G and Cordonnier G (2023) Ice-flow model emulator based on
+  physics-informed deep learning. \emph{Journal of Glaciology},
+  \textbf{69}(278), 1941--1955 (\doi {10.1017/jog.2023.73})
+
+\bibitem[\protect\citename{Kneib and others, }2022]{kneib2022}
+Kneib M, Miles ES, Buri P, Fugger S, McCarthy M, Shaw TE, Chuanxi Z, Truffer M,
+  Westoby MJ, Yang W and Pellicciotti F (2022) Sub-seasonal variability of
+  supraglacial ice cliff melt rates and associated processes from time-lapse
+  photogrammetry. \emph{The Cryosphere}, \textbf{16}(11), 4701--4725 (\doi
+  {10.5194/tc-16-4701-2022})
+
+\bibitem[\protect\citename{Kneib and others, }2024]{kneib2024}
+Kneib M, Dehecq A, Gilbert A, Basset A, Miles ES, Jouvet G, Jourdain B, Ducasse
+  E, Beraud L, Rabatel A and others (2024) Distributed surface mass balance of
+  an avalanche-fed glacier. \emph{EGUsphere}, \textbf{2024}, 1--35 (\doi
+  {10.5194/egusphere-2024-1733})
+
+\bibitem[\protect\citename{Marzeion and others, }2012]{marzeion2012}
+Marzeion B, Jarosch AH and Hofer M (2012) Past and future sea-level change from
+  the surface mass balance of glaciers. \emph{The Cryosphere}, \textbf{6}(6),
+  1295--1322 (\doi {10.5194/tc-6-1295-2012})
+
+\bibitem[\protect\citename{Miles and others, }2021]{miles2021}
+Miles E, McCarthy M, Dehecq A, Kneib M, Fugger S and Pellicciotti F (2021)
+  Health and sustainability of glaciers in {H}igh {M}ountain {A}sia.
+  \emph{Nature Communications}, \textbf{12}(1), 2868 (\doi
+  {10.1038/s41467-021-23073-4})
+
+\bibitem[\protect\citename{Millan and others, }2022]{millan2022}
+Millan R, Mouginot J, Rabatel A and Morlighem M (2022) Ice velocity and
+  thickness of the world's glaciers. \emph{Nature Geoscience}, \textbf{15}(2),
+  124--129 (\doi {10.1038/s41561-021-00885-z})
+
+\bibitem[\protect\citename{Paszke and others, }2017]{paszke2017}
+Paszke A, Gross S, Chintala S, Chanan G, Yang E, DeVito Z, Lin Z, Desmaison A,
+  Antiga L and Lerer A (2017) Automatic differentiation in {P}y{T}orch. In
+  \emph{NIPS 2017 Autodiff Workshop}
+
+\bibitem[\protect\citename{Pelto and Menounos, }2021]{pelto2021}
+Pelto BM and Menounos B (2021) Surface mass-balance gradients from elevation
+  and ice flux data in the {C}olumbia {B}asin, {C}anada. \emph{Frontiers in
+  Earth Science}, \textbf{9}, 675681 (\doi {10.3389/feart.2021.675681})
+
+\bibitem[\protect\citename{Rabatel and others, }2018]{rabatel2018}
+Rabatel A, Sanchez O, Vincent C and Six D (2018) Estimation of glacier
+  thickness from surface mass balance and ice flow velocities: A case study on
+  {A}rgenti\`ere {G}lacier, {F}rance. \emph{Frontiers in Earth Science},
+  \textbf{6}, 112 (\doi {10.3389/feart.2018.00112})
+
+\bibitem[\protect\citename{Radi\'c and others, }2014]{radic2014}
+Radi\'c V, Bliss A, Beedlow AC, Hock R, Miles E and Cogley JG (2014) Regional
+  and global projections of twenty-first century glacier mass changes in
+  response to climate scenarios from global climate models. \emph{Climate
+  Dynamics}, \textbf{42}(1--2), 37--58 (\doi {10.1007/s00382-013-1719-7})
+
+\bibitem[\protect\citename{Rounce and others, }2020]{rounce2020}
+Rounce DR, Hock R and Shean DE (2020) Glacier mass change in {H}igh {M}ountain
+  {A}sia through 2100 using the open-source {P}ython glacier evolution model
+  ({PyGEM}). \emph{Frontiers in Earth Science}, \textbf{7}, 331 (\doi
+  {10.3389/feart.2019.00331})
+
+\bibitem[\protect\citename{Van~Tricht and others, }2021]{vantricht2021}
+Van~Tricht L, Huybrechts P, Van~Breedam J, Vanhulle A, Van~Oost K and Zekollari
+  H (2021) Estimating surface mass balance patterns from unoccupied aerial
+  vehicle measurements in the ablation area of the {M}orteratsch--{P}ers
+  glacier complex ({S}witzerland). \emph{The Cryosphere}, \textbf{15}(9),
+  4445--4464 (\doi {10.5194/tc-15-4445-2021})
+
+\bibitem[\protect\citename{Zekollari and Huybrechts, }2015]{zekollari2015}
+Zekollari H and Huybrechts P (2015) On the climate--geometry imbalance,
+  response time and volume--area scaling of an alpine glacier: insights from a
+  3-{D} flow model applied to {V}adret da {M}orteratsch, {S}witzerland.
+  \emph{Annals of Glaciology}, \textbf{56}(70), 51--62 (\doi
+  {10.3189/2015AoG70A921})
+
+\bibitem[\protect\citename{Zemp and others, }2019]{zemp2019}
+Zemp M, Huss M, Thibert E, Eckert N, McNabb R, Huber J, Barandun M, Machguth H,
+  Nussbaumer SU, G\"artner-Roer I, Thomson L, Paul F, Maussion F, Kutuzov S and
+  Cogley JG (2019) Global glacier mass changes and their contributions to
+  sea-level rise from 1961 to 2016. \emph{Nature}, \textbf{568}(7752), 382--386
+  (\doi {10.1038/s41586-019-1071-0})
+
+\end{thebibliography}

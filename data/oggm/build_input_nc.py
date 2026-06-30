@@ -35,7 +35,7 @@ from scipy.ndimage import distance_transform_edt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_RGI_ID = "RGI60-11.01450"
-N_YEARS = 20.0   # Hugonnet window: 2000-01-01 → 2020-01-01
+DEFAULT_N_YEARS = 20.0   # Hugonnet window: 2000-01-01 → 2020-01-01
 
 # Sanity-check thresholds (Aletsch-scale; loose enough for any Alpine glacier).
 EXPECTED_DHDT_MEAN_RANGE = (-3.0, 1.0)    # m yr⁻¹, on-glacier; outside → suspect units
@@ -91,7 +91,9 @@ def rasterize_glathida(csv_path, x, y, icemask):
     return out
 
 
-def main(rgi_id):
+def main(rgi_id, n_years=DEFAULT_N_YEARS):
+    N_YEARS = float(n_years)
+    start_yr = int(round(2020 - N_YEARS))
     gdir = os.path.join(HERE, rgi_id)
     if not os.path.isdir(gdir):
         sys.exit(f"missing OGGM gdir: {gdir}  (run fetch_oggm.py first)")
@@ -183,7 +185,7 @@ def main(rgi_id):
     usurfobs   = (copdem - dhdt * N_YEARS).astype(np.float32)  # ≈ Jan 2000 (derived)
     usurf      = fill_nan_nearest(usurfobs)             # NaN-filled (emulator input)
 
-    print(f"   2000→2020 surface change: dh range "
+    print(f"   {start_yr}→2020 surface change: dh range "
           f"[{float(np.nanmin(usurfinfer - usurfobs)):.1f}, "
           f"{float(np.nanmax(usurfinfer - usurfobs)):.1f}] m total")
 
@@ -236,8 +238,8 @@ def main(rgi_id):
             v.standard_name = name
             v[:, :] = data
 
-        add("usurf",       usurf,      "m",       "Surface Topography (NaN-filled start surface ≈ 2000, emulator input)")
-        add("usurfobs",    usurfobs,   "m",       f"Observed Surface Topography (COP-DEM 30 − Hugonnet dhdt × {N_YEARS:.0f}, ≈ Jan 2000)")
+        add("usurf",       usurf,      "m",       f"Surface Topography (NaN-filled start surface ≈ {start_yr}, emulator input)")
+        add("usurfobs",    usurfobs,   "m",       f"Observed Surface Topography (COP-DEM 30 − Hugonnet dhdt × {N_YEARS:.0f}, ≈ Jan {start_yr})")
         add("usurfinfer",  usurfinfer, "m",       "End-of-period Surface Topography (COP-DEM 30, ≈ Jan 2020 anchor)")
         add("thkinit",     thkinit,    "m",       "Ice Thickness prior (Millan 2022)")
         add("thk",         thkinit,    "m",       "Ice Thickness (DA initial state, copy of thkinit)")
@@ -260,5 +262,12 @@ def main(rgi_id):
 
 
 if __name__ == "__main__":
-    rgi_id = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_RGI_ID
-    main(rgi_id)
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("rgi_id", nargs="?", default=DEFAULT_RGI_ID)
+    ap.add_argument("--n-years", type=float, default=DEFAULT_N_YEARS,
+                    help=f"Hugonnet window length (default {DEFAULT_N_YEARS:g} → "
+                         f"start ≈ Jan {int(2020 - DEFAULT_N_YEARS)}). Use 14 for a "
+                         f"2006-anchored start.")
+    args = ap.parse_args()
+    main(args.rgi_id, n_years=args.n_years)

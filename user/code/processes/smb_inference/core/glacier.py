@@ -224,6 +224,9 @@ class GlacierDynamicsCheckpointed(tf.keras.Model):
             retrain_interval_tf = tf.constant(retrain_interval, dtype=tf.float32)
             t_last_retrain = tf.constant(time, dtype=tf.float32)
 
+            # First and last replay steps only — used for the start-vs-end
+            # flux-divergence comparison plot. The continuity SMB estimate gets
+            # its div(flux) from the DA output, not from this replay.
             self.snapshot_start = None
             self.snapshot_end = None
             first_step = True
@@ -240,20 +243,18 @@ class GlacierDynamicsCheckpointed(tf.keras.Model):
                             time=float(time_tf)
                         )
 
-                if first_step:
-                    self.snapshot_start = {
-                        "H": tf.identity(H_ice),
-                        "ubar": tf.identity(ubar),
-                        "vbar": tf.identity(vbar),
-                        "time": float(time_tf.numpy()),
-                    }
-                    first_step = False
-                self.snapshot_end = {
+                snapshot = {
                     "H": tf.identity(H_ice),
                     "ubar": tf.identity(ubar),
                     "vbar": tf.identity(vbar),
+                    "Z_surf": tf.identity(Z_surf),
                     "time": float(time_tf.numpy()),
                 }
+
+                if first_step:
+                    self.snapshot_start = snapshot
+                    first_step = False
+                self.snapshot_end = snapshot
 
                 if (time_tf - t_last_update) >= vis_freq_tf:
                     new_smb = update_smb_profile(Z_surf, smb_vec, z_min, dz) * ice_mask

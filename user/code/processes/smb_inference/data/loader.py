@@ -128,7 +128,8 @@ def load_daily_data(file_path, accumulate=False):
 
 
 def load_smb_point_obs(path_csv, alt_col="Alt", smb_col="Annual_SMB (m w.e.)",
-                       to_ice_eq=True, rho_ice=0.917):
+                       to_ice_eq=True, rho_ice=0.917, with_year=False,
+                       year_col="Year"):
     """
     Load stake SMB observations from a CSV.
 
@@ -136,21 +137,33 @@ def load_smb_point_obs(path_csv, alt_col="Alt", smb_col="Annual_SMB (m w.e.)",
     Returns (altitudes, smb_values) as 1D numpy float32 arrays, with SMB
     converted to m ice eq./yr by default (dividing by rho_ice) so it plots
     on the same axis as the model's smb_vec.
+
+    If with_year=True, also returns the observation year as a third array
+    (read from year_col). When the column is absent the year array is None.
     """
     import csv
-    alts, smbs = [], []
+    alts, smbs, years = [], [], []
+    have_year = False
     with open(path_csv, "r") as f:
         reader = csv.DictReader(f)
+        have_year = year_col in (reader.fieldnames or [])
         for row in reader:
             try:
-                alts.append(float(row[alt_col]))
-                smbs.append(float(row[smb_col]))
+                alt = float(row[alt_col])
+                smb = float(row[smb_col])
+                year = float(row[year_col]) if have_year else np.nan
             except (KeyError, ValueError):
                 continue
+            alts.append(alt)
+            smbs.append(smb)
+            years.append(year)
     alts = np.asarray(alts, dtype=np.float32)
     smbs = np.asarray(smbs, dtype=np.float32)
     if to_ice_eq:
         smbs = smbs / rho_ice
+    if with_year:
+        years = np.asarray(years, dtype=np.float32) if have_year else None
+        return alts, smbs, years
     return alts, smbs
 
 

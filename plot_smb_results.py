@@ -109,33 +109,187 @@ def plot_thickness(run_dir, thk_obs, thk_opt, root):
     print(f"  Saved {out_path}")
 
 
-def plot_smb_profile(run_dir, smb_vec, z_min, dz, root):
-    """SMB profile: elevation (y) vs SMB (x)."""
+def _bin_by_elevation(field, z_surf, mask, z_min, dz, n_bins):
+    """Average a 2D field into elevation bins centered at z_min + i*dz.
+
+    Bins match the SMB-profile elevation axis (centers z_min + i*dz, width dz).
+    Returns a 1D array of length n_bins; empty bins are NaN.
+    """
+    profile = np.full(n_bins, np.nan, dtype=np.float64)
+    valid = mask & np.isfinite(field) & np.isfinite(z_surf)
+    if not np.any(valid):
+        return profile
+
+    idx = np.round((z_surf[valid] - z_min) / dz).astype(int)
+    vals = field[valid].astype(np.float64)
+    in_range = (idx >= 0) & (idx < n_bins)
+    idx, vals = idx[in_range], vals[in_range]
+    if idx.size == 0:
+        return profile
+
+    sums = np.bincount(idx, weights=vals, minlength=n_bins)
+    counts = np.bincount(idx, minlength=n_bins)
+    nonempty = counts > 0
+    profile[nonempty] = sums[nonempty] / counts[nonempty]
+    return profile
+
+
+def plot_mass_balance_diagnostic(run_dir, smb_vec, z_min, dz, usurf, thk_opt,
+                                 dhdt, divflux, root):
+    """Mass-balance diagnostic: SMB, dh/dt (Hugonnet) and the DA-derived flux
+    divergence as elevation profiles on a common axis.
+
+    The continuity equation governing glacier evolution is
+        dh/dt + div(flux) = SMB,
+    so the dashed (dh/dt + div(flux)) curve should track the inferred SMB
+    where the model is consistent with the observed thinning. The flux
+    divergence is the steady value from the data assimilation, not a
+    time-mean of the SMB forward replay.
+    """
     n = len(smb_vec)
+    elevations = float(z_min) + np.arange(n) * float(dz)
+    mask = thk_opt > 0.5  # restrict binning to on-ice pixels
 
-    if z_min is not None and dz is not None:
-        elevations = float(z_min) + np.arange(n) * float(dz)
-        ylabel = "Elevation (m a.s.l.)"
-    else:
-        print(f"  WARNING: z_min.npy or dz.npy missing in {run_dir}, using bin index")
-        elevations = np.arange(n)
-        ylabel = "Bin index"
+    dhdt_prof = (
+        _bin_by_elevation(dhdt, usurf, mask, float(z_min), float(dz), n)
+        if dhdt is not None else None
+    )
+    div_prof = (
+        _bin_by_elevation(divflux, usurf, mask, float(z_min), float(dz), n)
+        if divflux is not None else None
+    )
 
-    fig, ax = plt.subplots(figsize=(6, 8))
-    ax.plot(smb_vec, elevations, "o-", color="steelblue", linewidth=2, markersize=5)
+    fig, ax = plt.subplots(figsize=(7, 8))
+    ax.plot(smb_vec, elevations, "o-", color="steelblue", linewidth=2,
+            markersize=4, label="SMB (inferred)")
+    if dhdt_prof is not None:
+        ax.plot(dhdt_prof, elevations, "s-", color="firebrick", linewidth=2,
+                markersize=4, label="dh/dt (obs)")
+    if div_prof is not None:
+        ax.plot(div_prof, elevations, "^-", color="seagreen", linewidth=2,
+                markersize=4, label=r"$\nabla\!\cdot$flux (DA)")
+    if dhdt_prof is not None and div_prof is not None:
+        ax.plot(dhdt_prof + div_prof, elevations, "--", color="k", linewidth=1.5,
+                alpha=0.7, label=r"dh/dt + $\nabla\!\cdot$flux")
+
     ax.axvline(0, color="gray", linestyle="--", linewidth=0.8)
-    ax.set_xlabel("SMB (m ice eq / yr)")
-    ax.set_ylabel(ylabel)
+    ax.set_xlabel("rate (m / yr, ice eq.)")
+    ax.set_ylabel("Elevation (m a.s.l.)")
     ax.grid(True, alpha=0.3)
+    ax.legend(loc="best", fontsize=9)
 
     run_label = _run_label(run_dir, root)
-    ax.set_title(f"SMB elevation profile  [{run_label}]")
+    ax.set_title(f"Mass-balance diagnostic  [{run_label}]\n"
+                 r"dh/dt + $\nabla\!\cdot$flux = SMB")
     fig.tight_layout()
 
-    out_path = os.path.join(run_dir, "smb_profile.png")
+    out_path = os.path.join(run_dir, "mass_balance_diagnostic.png")
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"  Saved {out_path}")
+
+
+def _load_da_fields(run_dir):
+    """Load divflux / usurf / icemask from the DA output geology-optimized.nc.
+
+    The combined DA+SMB run writes geology-optimized.nc one level above the
+    smb_inference/ dir. Returns (divflux, usurf, icemask) as numpy arrays, or
+    (None, None, None) if the file or divflux is missing.
+    """
+    nc_path = os.path.normpath(os.path.join(run_dir, "..", "geology-optimized.nc"))
+    if not os.path.exists(nc_path):
+        return None, None, None
+    try:
+        import xarray as xr
+        ds = xr.open_dataset(nc_path)
+        divflux = ds["divflux"].values if "divflux" in ds else None
+        usurf = ds["usurf"].values if "usurf" in ds else None
+        icemask = ds["icemask"].values if "icemask" in ds else None
+        return divflux, usurf, icemask
+    except Exception as e:
+        print(f"  Could not read {nc_path}: {e}")
+        return None, None, None
+
+
+def plot_smb_from_fluxdiv(run_dir, smb_vec, z_min, dz, dhdt, root):
+    """Flux-divergence (geodetic) SMB reconstruction, run-free.
+
+    Combines the DA-derived steady flux divergence (assumed constant over the
+    inversion period) with Hugonnet dh/dt via the continuity equation
+        SMB = dh/dt + div(flux),
+    saves a 3-panel map (dh/dt, div(flux), reconstructed SMB), then bins the
+    reconstructed SMB by elevation and overlays it on the inferred profile.
+    """
+    divflux, usurf, icemask = _load_da_fields(run_dir)
+    if divflux is None or usurf is None or dhdt is None:
+        missing = []
+        if divflux is None:
+            missing.append("geology-optimized.nc:divflux")
+        if usurf is None:
+            missing.append("geology-optimized.nc:usurf")
+        if dhdt is None:
+            missing.append("dhdt_obs.npy")
+        print(f"  Skipping flux-divergence SMB: missing {', '.join(missing)}")
+        return
+
+    if icemask is not None:
+        mask = icemask > 0.5
+    else:
+        mask = np.isfinite(usurf)
+    mask = mask & np.isfinite(divflux) & np.isfinite(dhdt)
+
+    smb_recon = dhdt + divflux  # continuity: SMB = dh/dt + div(flux)
+
+    run_label = _run_label(run_dir, root)
+
+    # ── 3-panel map (on-ice only) ────────────────────────────────────────────
+    def _masked(field):
+        return np.where(mask, field, np.nan)
+
+    fields = [
+        (_masked(dhdt), "dh/dt (obs)"),
+        (_masked(divflux), r"$\nabla\!\cdot$flux (DA, steady)"),
+        (_masked(smb_recon), r"SMB = dh/dt + $\nabla\!\cdot$flux"),
+    ]
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    for ax, (field, title) in zip(axes, fields):
+        finite = field[np.isfinite(field)]
+        vmax = float(np.nanpercentile(np.abs(finite), 98)) if finite.size else 1.0
+        if not np.isfinite(vmax) or vmax == 0.0:
+            vmax = 1.0
+        im = ax.imshow(field, origin="lower", cmap="RdBu_r", vmin=-vmax, vmax=vmax)
+        ax.set_title(title)
+        ax.set_xlabel("x (grid)")
+        ax.set_ylabel("y (grid)")
+        plt.colorbar(im, ax=ax, label="m / yr", fraction=0.046, pad=0.04)
+    fig.suptitle(f"Flux-divergence SMB reconstruction  [{run_label}]", fontsize=13)
+    fig.tight_layout()
+    map_path = os.path.join(run_dir, "smb_from_fluxdiv_maps.png")
+    fig.savefig(map_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved {map_path}")
+
+    # ── profile comparison vs inferred SMB ────────────────────────────────────
+    n = len(smb_vec)
+    elevations = float(z_min) + np.arange(n) * float(dz)
+    recon_prof = _bin_by_elevation(smb_recon, usurf, mask, float(z_min), float(dz), n)
+
+    fig, ax = plt.subplots(figsize=(7, 8))
+    ax.plot(smb_vec, elevations, "o-", color="steelblue", linewidth=2,
+            markersize=4, label="SMB (inferred)")
+    ax.plot(recon_prof, elevations, "D-", color="darkorange", linewidth=2,
+            markersize=4, label=r"SMB = dh/dt + $\nabla\!\cdot$flux (DA)")
+    ax.axvline(0, color="gray", linestyle="--", linewidth=0.8)
+    ax.set_xlabel("SMB (m / yr, ice eq.)")
+    ax.set_ylabel("Elevation (m a.s.l.)")
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="best", fontsize=9)
+    ax.set_title(f"Inferred vs flux-divergence SMB  [{run_label}]")
+    fig.tight_layout()
+    prof_path = os.path.join(run_dir, "smb_from_fluxdiv_profile.png")
+    fig.savefig(prof_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved {prof_path}")
 
 
 def main():
@@ -186,10 +340,35 @@ def main():
                 missing.append("thk_optimized.npy")
             print(f"  Skipping thickness plot: missing {', '.join(missing)}")
 
-        if smb_vec is not None:
-            plot_smb_profile(run_dir, smb_vec, z_min, dz, args.root)
+        # Mass-balance diagnostic: SMB / dh/dt / div(flux) elevation profiles.
+        # div(flux) is the steady value from the DA (geology-optimized.nc),
+        # not a time-mean of the SMB forward replay.
+        usurf = load_npy(os.path.join(run_dir, "usurf_modeled.npy"))
+        dhdt = load_npy(os.path.join(run_dir, "dhdt_obs.npy"))
+        divflux, _, _ = _load_da_fields(run_dir)
+
+        if (smb_vec is not None and usurf is not None and thk_opt is not None
+                and z_min is not None and (dhdt is not None or divflux is not None)):
+            plot_mass_balance_diagnostic(
+                run_dir, smb_vec, z_min, dz, usurf, thk_opt,
+                dhdt, divflux, args.root,
+            )
         else:
-            print(f"  Skipping SMB profile plot: missing smb_vec.npy")
+            missing = []
+            if usurf is None:
+                missing.append("usurf_modeled.npy")
+            if dhdt is None and divflux is None:
+                missing.append("dhdt_obs.npy/geology-optimized.nc:divflux")
+            if z_min is None:
+                missing.append("z_min")
+            if missing:
+                print(f"  Skipping mass-balance diagnostic: missing "
+                      f"{', '.join(missing)}")
+
+        # Flux-divergence SMB reconstruction (run-free): DA divflux + Hugonnet
+        # dh/dt -> SMB map + profile, compared to the inferred profile.
+        if smb_vec is not None and z_min is not None:
+            plot_smb_from_fluxdiv(run_dir, smb_vec, z_min, dz, dhdt, args.root)
 
         print()
 

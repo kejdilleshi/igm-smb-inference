@@ -1,0 +1,151 @@
+# @package _global_
+#
+# SMB inference on Grosser Aletschgletscher — IN-HOUSE variant.
+# Period: 2009 → 2017 (8 years), driven by swisstopo-derived DEMs from
+# igm-examples/aletsch/data/past_surf.nc (data/input_aletsch.nc), considered
+# more accurate than Hugonnet dh/dt for this glacier.
+#
+# Mirrors the Rhone/OGGM pipeline so run_pipeline.py can drive it
+# (--glacier aletsch_insitu):
+#   1. data_assimilation — invert thk against velsurf / icemask ONLY
+#                          (velocity-only; NO thickness obs).
+#   2. smb_inference     — forward-run 2009 → 2017, fit a 1-D SMB(z) profile
+#                          (dz=200 m) to match the swisstopo 2017 surface.
+#
+# Companion to params_oggm_aletsch.yaml (Hugonnet 2000-2020). The in-house
+# 2009-2017 geodetic dh/dt (built into input_aletsch.nc) is the less-smooth
+# alternative used by the SMB diagnostics.
+
+core:
+  hardware:
+    visible_gpus: [0]
+
+defaults:
+  - override /inputs:
+    - local
+  - override /processes:
+    - iceflow
+    - data_assimilation
+    - smb_inference
+
+inputs:
+  local:
+    filename: input_aletsch.nc
+    crop:
+      xmin: 417650.0
+      xmax: 430450.0
+      ymin: 5138650.0
+      ymax: 5157550.0
+
+processes:
+  iceflow:
+    physics:
+      init_slidingco: 0.193
+      sliding:
+        weertman:
+          u_ref: 100.0
+    emulator:
+      network:
+        architecture: SIADecompNet
+    numerics:
+      Nz: 2
+      basis_vertical: molho
+      basis_horizontal : q1
+      precision: single
+    method: unified
+    unified:
+      display:
+        print_cost: true
+        print_cost_freq: 50
+      inputs: [thk, usurf, slidingco, arrhenius, dX]
+      bcs: []
+      mapping: network
+      optimizer: lbfgs
+      lbfgs:
+        memory: 20
+      line_search: hager-zhang
+      nbit: -1
+      nbit_warmup: -1
+      nbit_init: -1
+      retrain_freq: 1000000
+      network:
+        pretrained_path: "/home/klleshi/Documents/igm-examples/aletsch/SIADecompNet_18x80_dil1-32/"
+        pretrained: true
+        print_summary: true
+        old_format: false
+
+  data_assimilation:
+    control_list:
+      - thk
+    cost_list:
+      - velsurf
+      - icemask
+    optimization:
+      nbitmax: 1000
+      step_size: 0.9
+      retrain_iceflow_model: true
+      fix_opti_normalization_issue: true
+      obstacle_constraint: ['reproject']
+      step_size_decay: 0.95
+      pertubate: True
+      patience: 200
+    fitting:
+      velsurfobs_std: 2.1
+      thkobs_std: 1.2
+    regularization:
+      thk: 1200.0
+      smooth_anisotropy_factor: 1.0
+      convexity_weight: 0.0
+      to_regularize: thk
+    scaling:
+      thk: 1
+    output:
+      plot2d_live: false
+      save_result_in_ncdf: geology-optimized.nc
+      save_iterat_in_ncdf: true
+      vars_to_save:
+        - usurf
+        - thk
+        - slidingco
+        - velbase_mag
+        - velsurf_mag
+        - velsurfobs_mag
+        - divflux
+        - icemask
+        - arrhenius
+
+  smb_inference:
+    t_start: 2009.0
+    ttot: 2017.0
+    dtmax: 1.0
+    cfl: 0.2
+    emulator:
+      from_state: true
+    observations:
+      state_variable: usurfinfer
+      smb_points_file: ${hydra:runtime.cwd}/data/aletsch/SMB_aletsch_2009-2017_rawstakes_utm32N.csv
+    inversion:
+      method: profile
+      dz: 200.0
+      smb_init_low: -10.0
+      smb_init_high: 1.0
+    optimization:
+      optimizer: lbfgs
+      nbitmax: 50
+      learning_rate: 0.1
+      regularisation: 0.05
+      early_stop_patience: 3
+      early_stop_threshold: 0.01
+      retrain_emulator_freq: 50000
+      early_retrain_iters: 1
+      lbfgs_memory: 10
+      lbfgs_tolerance: 1.0e-6
+      lbfgs_x_tolerance: 0.0
+      lbfgs_f_relative_tolerance: 0.0
+
+    output:
+      vis_freq: 5.0
+      visualize: false
+      outdir: ./smb_inference
+      plot_loss: true
+      save_results: true

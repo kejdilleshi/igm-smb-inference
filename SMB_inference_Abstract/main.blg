@@ -1,0 +1,50 @@
+This is BibTeX, Version 0.99d (TeX Live 2023/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+The style file: igs.bst
+Database file #1: BIBLIO/biblio.bib
+Warning--I didn't find a database entry for "glamos"
+Warning--I didn't find a database entry for "liunocedal1989"
+Warning--I didn't find a database entry for "griewank2000"
+You've used 24 entries,
+            2869 wiz_defined-function locations,
+            763 strings with 10803 characters,
+and the built_in function-call counts, 37540 in all, are:
+= -- 4185
+> -- 912
+< -- 12
++ -- 316
+- -- 289
+* -- 2865
+:= -- 3944
+add.period$ -- 24
+call.type$ -- 24
+change.case$ -- 267
+chr.to.int$ -- 25
+cite$ -- 24
+duplicate$ -- 3933
+empty$ -- 2729
+format.name$ -- 379
+if$ -- 7809
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 332
+newline$ -- 79
+num.names$ -- 96
+pop$ -- 2002
+preamble$ -- 1
+purify$ -- 240
+quote$ -- 0
+skip$ -- 751
+stack$ -- 0
+substring$ -- 4619
+swap$ -- 779
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 357
+warning$ -- 0
+while$ -- 230
+width$ -- 0
+write$ -- 315
+(There were 3 warnings)

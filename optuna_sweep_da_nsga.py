@@ -1,34 +1,35 @@
 #!/usr/bin/env python3
 """
-Multi-objective Optuna NSGA-II sweep over DA hyperparameters. Default target
-is Rhonegletscher (OGGM/COP-DEM pipeline, params_oggm_rhone_da.yaml); pass
-`--experiment <name>` to sweep a different DA config (e.g. params_aletsch_da,
-params_oggm_aletsch_da). The sweep dir and Optuna study name are derived
-automatically from the experiment name, so different targets don't clobber
-each other's databases.
+Single-objective Optuna sweep over DA hyperparameters (TPE sampler).
 
-Search space (continuous, log where appropriate):
-    processes.data_assimilation.regularization.thk        : [1000, 4000] (log)
-    processes.data_assimilation.fitting.thkobs_std        : [0.5, 10]    (log)
-    processes.iceflow.physics.init_slidingco              : [0.05, 2.0]  (log)
-        ↑ this is the τ_ref (reference basal shear stress in MPa for
-          u_ref=100 m/yr). HIGHER value = stiffer bed = LESS sliding.
-          Sliding is NOT optimized by DA here (control_list=[thk]); we
-          sweep init_slidingco to find a good fixed scalar value.
+Default target is Rhonegletscher (OGGM/COP-DEM pipeline,
+``params_oggm_rhone_da.yaml``); pass ``--experiment <name>`` to sweep a
+different DA config (e.g. ``params_oggm_aletsch_da``). The sweep dir and
+Optuna study name are derived from the experiment name, so different targets
+don't clobber each other's databases.
 
-Two objectives (both minimized, last row of costs.dat):
-    1. velsurf    — surface-velocity misfit
-    2. thk        — GlaThiDa thickness-observation misfit
+(Filename retained as ``optuna_sweep_da_nsga.py`` for backward compatibility
+with the pipeline; the implementation is now single-objective TPE, not
+NSGA-II.)
 
-thk_regu (the curvature regularization on thk) is intentionally *not* an
-objective: it's an internal regularization term, not data fidelity, so
-including it would just push the Pareto front toward over-smoothed
-thickness fields that fit neither velsurf nor thk well.
+Search space (log-uniform):
+    processes.iceflow.physics.init_slidingco : [0.05, 2.0]
+        ↑ τ_ref (reference basal shear stress in MPa for u_ref=100 m/yr).
+          HIGHER value = stiffer bed = LESS sliding.
+    processes.iceflow.physics.init_arrhenius : [30, 200]
+        ↑ flow-law constant A (MPa^-3 yr^-1). IGM default 78 (~temperate).
+          LOWER = colder/stiffer ice.
 
-NSGA-II is a genetic algorithm — it evolves a population of candidates by
-selection / crossover / mutation, retaining a non-dominated Pareto front
-across the two objectives. Output is the Pareto-optimal trials, not a
-single best.
+Neither parameter is optimized by DA itself — both are fixed scalars at the
+values picked here. ``regularization.thk`` is NOT swept either; it is chosen
+separately via an L-curve in step 2.2 of the pipeline.
+
+Single cost term (minimized, last row of costs.dat):
+    velsurf — surface-velocity misfit (m yr⁻¹ scale, see velsurfobs_std).
+
+Thickness observations are intentionally NOT used: with ``cost_list=[velsurf,
+icemask]`` (no ``thk``) the DA inverts thickness purely from velocity and
+outline matching, regularized by ``reg.thk``.
 
 Outputs
 -------
@@ -37,16 +38,16 @@ Outputs
         trial_XXXX/                 # one per evaluated candidate
         sweep_summary.json
         plots/
-            pareto_velsurf_thk.png
-            param_vs_costs.png
+            velsurf_vs_params.png
+            param_landscape.png
             convergence.png
 
 Usage
 -----
     conda activate igm-pretrain
-    python optuna_sweep_da_nsga.py                                    # Rhone, default 30 trials
+    python optuna_sweep_da_nsga.py                                # Rhone default, 30 trials
     python optuna_sweep_da_nsga.py --n-trials 60
-    python optuna_sweep_da_nsga.py --experiment params_aletsch_da    # different target
+    python optuna_sweep_da_nsga.py --experiment params_oggm_aletsch_da
     python optuna_sweep_da_nsga.py --plots-only
 """
 
@@ -60,7 +61,7 @@ import time
 
 import numpy as np
 import optuna
-from optuna.samplers import NSGAIISampler
+from optuna.samplers import TPESampler
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 
@@ -68,34 +69,26 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ── Defaults (overridable via CLI) ──────────────────────────────────────────
 
-# Default to the OGGM/COP-DEM Rhone DA config — see experiment/params_oggm_rhone_da.yaml.
-# Each experiment name gets its own sweep_results_<name>/ dir and Optuna
-# study (keyed off the experiment), so flipping --experiment doesn't load a
-# prior sweep's DB back into a mismatched search space.
 DEFAULT_EXPERIMENT = "params_oggm_rhone_da"
 DEFAULT_N_TRIALS = 30
-DEFAULT_POPULATION = 10
 DEFAULT_SEED = 42
 
 
 def _experiment_paths(experiment: str):
-    """Derive per-experiment output dirs from the Hydra experiment name."""
     sweep_dir = os.path.join(PROJECT_DIR, f"sweep_results_{experiment}")
     return {
         "sweep_dir": sweep_dir,
         "db_path": os.path.join(sweep_dir, "optuna_study.db"),
         "plots_dir": os.path.join(sweep_dir, "plots"),
-        "study_name": f"da_nsga2_{experiment}",
+        "study_name": f"da_tpe_{experiment}",
     }
 
-# Last row of costs.dat columns we treat as objectives. The IGM DA loop emits
-# one column per active cost term; with cost_list=[velsurf, icemask, thk] and
-# control_list=[thk] (slidingco NOT optimized) the header is:
-#   velsurf  thk  thk_regu  glen
-# We only treat the two data-fidelity terms as objectives — thk_regu is a
-# regularization, not data, and is still computed and saved in costs.dat
-# (via t.user_attrs["history_thk_regu"]) for diagnostics.
-DA_COST_COLUMNS = ["velsurf", "thk"]
+
+# Last row of costs.dat columns we treat as objectives. With cost_list=[velsurf,
+# icemask] (no thk) and control_list=[thk] the costs.dat header is typically:
+#     velsurf  icemask  thk_regu  glen
+# We minimise the final velsurf term; the others are kept as user_attrs.
+DA_COST_COLUMNS = ["velsurf"]
 
 
 # ── Metric extraction ───────────────────────────────────────────────────────
@@ -122,9 +115,8 @@ def _read_da_costs(trial_dir: str):
 
 def objective(trial: optuna.Trial, gpu_id: int, sweep_dir: str, experiment: str):
     params = {
-        "regularization_thk": trial.suggest_float("regularization_thk", 500.0, 4000.0, log=True),
-        "thkobs_std": trial.suggest_float("thkobs_std", 0.5, 10.0, log=True),
         "init_slidingco": trial.suggest_float("init_slidingco", 0.05, 2.0, log=True),
+        "init_arrhenius": trial.suggest_float("init_arrhenius", 30.0, 200.0, log=True),
     }
     trial.set_user_attr("gpu_id", gpu_id)
 
@@ -137,26 +129,21 @@ def objective(trial: optuna.Trial, gpu_id: int, sweep_dir: str, experiment: str)
         # override as a defensive belt-and-braces guard in case the YAML
         # is re-edited.
         "processes.data_assimilation.control_list=[thk]",
-        f"processes.data_assimilation.regularization.thk={params['regularization_thk']}",
-        f"processes.data_assimilation.fitting.thkobs_std={params['thkobs_std']}",
         f"processes.iceflow.physics.init_slidingco={params['init_slidingco']}",
+        f"processes.iceflow.physics.init_arrhenius={params['init_arrhenius']}",
         f"hydra.run.dir={trial_dir}",
     ]
 
     cmd = ["igm_run"] + overrides
 
-    # Pin this subprocess to a single GPU and let TF grow its memory allocation
-    # on demand (default behaviour pre-grabs all VRAM, which prevents stacking
-    # multiple trials per GPU).
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
     env["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
 
     print(
         f"\n[trial {trial.number} | gpu {gpu_id}] start  "
-        f"reg_thk={params['regularization_thk']:.2e}  "
-        f"thko_std={params['thkobs_std']:.3f}  "
-        f"init_slid={params['init_slidingco']:.3f}",
+        f"init_slid={params['init_slidingco']:.3f}  "
+        f"init_arrh={params['init_arrhenius']:.2f}",
         flush=True,
     )
 
@@ -173,7 +160,7 @@ def objective(trial: optuna.Trial, gpu_id: int, sweep_dir: str, experiment: str)
     except subprocess.TimeoutExpired:
         print(f"[trial {trial.number} | gpu {gpu_id}] TIMED OUT", flush=True)
         _save_meta(trial_dir, params, "timeout", time.time() - t0)
-        return float("inf"), float("inf")
+        return float("inf")
 
     elapsed = time.time() - t0
 
@@ -191,7 +178,7 @@ def objective(trial: optuna.Trial, gpu_id: int, sweep_dir: str, experiment: str)
         tail = result.stderr[-500:] if result.stderr else result.stdout[-500:]
         print(f"    {tail}", flush=True)
         _save_meta(trial_dir, params, "failed", elapsed)
-        return float("inf"), float("inf")
+        return float("inf")
 
     histories, header = _read_da_costs(trial_dir)
     missing = [c for c in DA_COST_COLUMNS if c not in histories]
@@ -202,9 +189,9 @@ def objective(trial: optuna.Trial, gpu_id: int, sweep_dir: str, experiment: str)
             flush=True,
         )
         _save_meta(trial_dir, params, "missing_output", elapsed)
-        return float("inf"), float("inf")
+        return float("inf")
 
-    finals = {c: float(histories[c][-1]) for c in DA_COST_COLUMNS}
+    final_velsurf = float(histories["velsurf"][-1])
 
     for c, hist in histories.items():
         trial.set_user_attr(f"history_{c}", hist)
@@ -214,19 +201,17 @@ def objective(trial: optuna.Trial, gpu_id: int, sweep_dir: str, experiment: str)
         params,
         "completed",
         elapsed,
-        final_velsurf=finals["velsurf"],
-        final_thk=finals["thk"],
-        n_iters=len(histories[DA_COST_COLUMNS[0]]),
+        final_velsurf=final_velsurf,
+        n_iters=len(histories["velsurf"]),
     )
 
     print(
         f"[trial {trial.number} | gpu {gpu_id}] done  "
-        f"velsurf={finals['velsurf']:.4f}  thk={finals['thk']:.4f}  "
-        f"time={elapsed:.0f}s",
+        f"velsurf={final_velsurf:.4f}  time={elapsed:.0f}s",
         flush=True,
     )
 
-    return finals["velsurf"], finals["thk"]
+    return final_velsurf
 
 
 def _save_meta(trial_dir, params, status, elapsed, **extra):
@@ -238,19 +223,19 @@ def _save_meta(trial_dir, params, status, elapsed, **extra):
 # ── Parallel runner ─────────────────────────────────────────────────────────
 
 
-_study_lock = threading.Lock()  # serialise ask/tell into SQLite
+_study_lock = threading.Lock()
 
 
 def _run_one_trial(study: optuna.Study, gpu_id: int, sweep_dir: str, experiment: str):
-    """Pull one trial, evaluate it on the given GPU, and report back."""
     with _study_lock:
         trial = study.ask()
 
     try:
-        values = objective(trial, gpu_id=gpu_id, sweep_dir=sweep_dir, experiment=experiment)
+        value = objective(trial, gpu_id=gpu_id, sweep_dir=sweep_dir,
+                          experiment=experiment)
         with _study_lock:
-            study.tell(trial, values)
-    except Exception as exc:  # objective itself shouldn't throw, but be safe
+            study.tell(trial, value)
+    except Exception as exc:
         with _study_lock:
             study.tell(trial, state=optuna.trial.TrialState.FAIL)
         print(
@@ -271,14 +256,7 @@ def _worker_loop(study, gpu_id, work_q, sweep_dir, experiment):
             work_q.task_done()
 
 
-def run_parallel(study: optuna.Study, n_trials: int, gpus, workers_per_gpu: int,
-                 sweep_dir: str, experiment: str):
-    """Run n_trials concurrently across (gpus × workers_per_gpu) threads.
-
-    Each worker thread pins its igm_run subprocess to a single GPU via
-    CUDA_VISIBLE_DEVICES, and lets TF grow its memory allocation on demand
-    so multiple trials per GPU can coexist.
-    """
+def run_parallel(study, n_trials, gpus, workers_per_gpu, sweep_dir, experiment):
     work_q: queue.Queue = queue.Queue()
     for _ in range(n_trials):
         work_q.put(None)
@@ -302,16 +280,8 @@ def run_parallel(study: optuna.Study, n_trials: int, gpus, workers_per_gpu: int,
 # ── Plots ────────────────────────────────────────────────────────────────────
 
 
-PARAM_NAMES = [
-    "regularization_thk",
-    "thkobs_std",
-    "init_slidingco",
-]
-LOG_PARAMS = {
-    "regularization_thk",
-    "thkobs_std",
-    "init_slidingco",
-}
+PARAM_NAMES = ["init_slidingco", "init_arrhenius"]
+LOG_PARAMS = {"init_slidingco", "init_arrhenius"}
 
 
 def make_plots(study: optuna.Study, plots_dir: str):
@@ -319,130 +289,80 @@ def make_plots(study: optuna.Study, plots_dir: str):
 
     os.makedirs(plots_dir, exist_ok=True)
 
-    completed = [
-        t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE
-    ]
+    completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
     if not completed:
         print("No completed trials — skipping plots.")
         return
 
-    pareto_numbers = {t.number for t in study.best_trials}
-
+    best_number = study.best_trial.number
     rows = []
     for t in completed:
-        rows.append(
-            {
-                "trial": t.number,
-                **{p: t.params[p] for p in PARAM_NAMES},
-                "velsurf": t.values[0],
-                "thk": t.values[1],
-                "is_pareto": t.number in pareto_numbers,
-            }
-        )
+        rows.append({
+            "trial": t.number,
+            **{p: t.params[p] for p in PARAM_NAMES},
+            "velsurf": t.value,
+            "is_best": t.number == best_number,
+        })
     arr = {k: np.array([r[k] for r in rows]) for k in rows[0].keys()}
-    is_pareto = arr["is_pareto"].astype(bool)
+    best = arr["is_best"].astype(bool)
 
-    # 1. Pareto scatter velsurf vs thk, Pareto trials highlighted, color = thkobs_std
+    # 1. Search-space scatter: init_slidingco × init_arrhenius, colored by velsurf
     fig, ax = plt.subplots(figsize=(7.5, 5.5))
-    ax.scatter(
-        arr["velsurf"][~is_pareto],
-        arr["thk"][~is_pareto],
-        c=arr["thkobs_std"][~is_pareto],
-        cmap="viridis",
-        s=40,
-        alpha=0.4,
-        edgecolor="gray",
-        linewidth=0.3,
-        label="dominated",
-    )
-    sc = ax.scatter(
-        arr["velsurf"][is_pareto],
-        arr["thk"][is_pareto],
-        c=arr["thkobs_std"][is_pareto],
-        cmap="viridis",
-        s=120,
-        edgecolor="red",
-        linewidth=1.2,
-        marker="*",
-        label="Pareto",
-    )
-    cbar = plt.colorbar(sc, ax=ax)
-    cbar.set_label("thkobs_std")
-    ax.set_xlabel("Final velsurf cost")
-    ax.set_ylabel("Final thk cost")
-    ax.set_title("NSGA-II Pareto front: velsurf vs thk")
-    ax.legend(fontsize=9)
-    ax.grid(True, alpha=0.3)
+    sc = ax.scatter(arr["init_slidingco"], arr["init_arrhenius"],
+                    c=arr["velsurf"], cmap="viridis_r", s=60,
+                    edgecolor="gray", linewidth=0.3)
+    ax.scatter(arr["init_slidingco"][best], arr["init_arrhenius"][best],
+               s=200, marker="*", edgecolor="red", linewidth=1.5,
+               facecolor="none", label=f"best (trial {best_number})")
+    ax.set_xscale("log"); ax.set_yscale("log")
+    ax.set_xlabel("init_slidingco (MPa)")
+    ax.set_ylabel("init_arrhenius (MPa⁻³ yr⁻¹)")
+    cbar = plt.colorbar(sc, ax=ax); cbar.set_label("final velsurf cost")
+    ax.legend(fontsize=9); ax.grid(True, alpha=0.3)
+    ax.set_title("Search-space landscape")
     fig.tight_layout()
-    path = os.path.join(plots_dir, "pareto_velsurf_thk.png")
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    path = os.path.join(plots_dir, "param_landscape.png")
+    fig.savefig(path, dpi=150); plt.close(fig)
     print(f"  saved {path}")
 
-    # 2. param vs each cost, with Pareto highlighted
-    costs_list = ["velsurf", "thk"]
-    fig, axes = plt.subplots(
-        len(PARAM_NAMES), len(costs_list), figsize=(9, 9), sharey="col"
-    )
-    for i, p in enumerate(PARAM_NAMES):
-        for j, c in enumerate(costs_list):
-            ax = axes[i, j]
-            ax.scatter(
-                arr[p][~is_pareto],
-                arr[c][~is_pareto],
-                s=20,
-                alpha=0.4,
-                color="gray",
-                edgecolor="none",
-            )
-            ax.scatter(
-                arr[p][is_pareto],
-                arr[c][is_pareto],
-                s=70,
-                color="red",
-                edgecolor="k",
-                linewidth=0.5,
-                marker="*",
-                label="Pareto" if (i == 0 and j == 0) else None,
-            )
-            ax.set_xlabel(p)
-            ax.set_ylabel(f"final {c}")
-            ax.set_yscale("log")
-            if p in LOG_PARAMS:
-                ax.set_xscale("log")
-            ax.grid(True, alpha=0.3)
-    axes[0, 0].legend(fontsize=8, loc="upper right")
-    fig.suptitle("Final DA cost terms vs each parameter (Pareto = red stars)")
-    fig.tight_layout()
-    path = os.path.join(plots_dir, "param_vs_costs.png")
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    print(f"  saved {path}")
-
-    # 3. Convergence curves (one subplot per cost term, Pareto highlighted)
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4.5))
-    for t in completed:
-        is_p = t.number in pareto_numbers
-        col = "red" if is_p else "gray"
-        alpha = 0.9 if is_p else 0.25
-        lw = 1.0 if is_p else 0.4
-        for ax, name in zip(axes, costs_list):
-            hist = t.user_attrs.get(f"history_{name}", [])
-            if hist:
-                ax.plot(hist, color=col, lw=lw, alpha=alpha)
-    for ax, name in zip(axes, costs_list):
-        ax.set_title(f"{name} history")
-        ax.set_xlabel("DA iteration")
-        ax.set_ylabel(name)
-        ax.set_yscale("log")
+    # 2. velsurf vs each param (1×2)
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
+    for ax, p in zip(axes, PARAM_NAMES):
+        ax.scatter(arr[p], arr["velsurf"], s=30, alpha=0.5,
+                   color="steelblue", edgecolor="none")
+        ax.scatter(arr[p][best], arr["velsurf"][best], s=120, marker="*",
+                   color="red", edgecolor="k", linewidth=0.5,
+                   label=f"best (trial {best_number})")
+        ax.set_xlabel(p)
+        if p in LOG_PARAMS: ax.set_xscale("log")
         ax.grid(True, alpha=0.3)
-    axes[0].plot([], [], color="red", lw=1.0, label="Pareto")
-    axes[0].plot([], [], color="gray", lw=0.4, label="dominated")
+    axes[0].set_ylabel("final velsurf cost")
+    axes[0].set_yscale("log")
     axes[0].legend(fontsize=8)
+    fig.suptitle("Final velsurf cost vs each parameter")
+    fig.tight_layout()
+    path = os.path.join(plots_dir, "velsurf_vs_params.png")
+    fig.savefig(path, dpi=150); plt.close(fig)
+    print(f"  saved {path}")
+
+    # 3. velsurf history per trial; best in red.
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for t in completed:
+        is_b = t.number == best_number
+        col = "red" if is_b else "gray"
+        alpha = 0.9 if is_b else 0.25
+        lw = 1.2 if is_b else 0.4
+        hist = t.user_attrs.get("history_velsurf", [])
+        if hist:
+            ax.plot(hist, color=col, lw=lw, alpha=alpha)
+    ax.plot([], [], color="red", lw=1.2, label=f"best (trial {best_number})")
+    ax.plot([], [], color="gray", lw=0.4, label="others")
+    ax.set_xlabel("DA iteration"); ax.set_ylabel("velsurf cost")
+    ax.set_yscale("log"); ax.grid(True, alpha=0.3); ax.legend(fontsize=8)
+    ax.set_title("velsurf convergence per trial")
     fig.tight_layout()
     path = os.path.join(plots_dir, "convergence.png")
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
+    fig.savefig(path, dpi=150); plt.close(fig)
     print(f"  saved {path}")
 
 
@@ -451,71 +371,41 @@ def make_plots(study: optuna.Study, plots_dir: str):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="NSGA-II DA sweep over 3 hyperparameters → 3 cost terms"
+        description="Single-objective TPE DA sweep over 2 hyperparameters "
+                    "(init_slidingco, init_arrhenius) → 1 cost (velsurf)."
     )
-    parser.add_argument(
-        "--experiment",
-        type=str,
-        default=DEFAULT_EXPERIMENT,
-        help=(
-            "Hydra experiment name to sweep over (without .yaml). "
-            f"Default: {DEFAULT_EXPERIMENT}. The sweep dir and Optuna study "
-            "name are derived from this — flipping --experiment opens a "
-            "separate DB so search spaces don't get cross-loaded."
-        ),
-    )
+    parser.add_argument("--experiment", type=str, default=DEFAULT_EXPERIMENT,
+                        help=f"Hydra experiment name (default: {DEFAULT_EXPERIMENT})")
     parser.add_argument("--n-trials", type=int, default=DEFAULT_N_TRIALS)
-    parser.add_argument("--population", type=int, default=DEFAULT_POPULATION)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
-    parser.add_argument(
-        "--gpus",
-        type=str,
-        default="0,1",
-        help="Comma-separated GPU ids to use (default: 0,1).",
-    )
-    parser.add_argument(
-        "--workers-per-gpu",
-        type=int,
-        default=3,
-        help="Concurrent trials per GPU (default: 3).",
-    )
-    parser.add_argument(
-        "--plots-only",
-        action="store_true",
-        help="Skip running trials; just regenerate plots from the existing DB.",
-    )
+    parser.add_argument("--gpus", type=str, default="0,1",
+                        help="Comma-separated GPU ids (default: 0,1).")
+    parser.add_argument("--workers-per-gpu", type=int, default=3,
+                        help="Concurrent trials per GPU (default: 3).")
+    parser.add_argument("--plots-only", action="store_true",
+                        help="Skip running trials; just regenerate plots.")
     args = parser.parse_args()
     gpus = [int(g) for g in args.gpus.split(",") if g.strip()]
 
     paths = _experiment_paths(args.experiment)
-    sweep_dir = paths["sweep_dir"]
-    db_path = paths["db_path"]
-    plots_dir = paths["plots_dir"]
-    study_name = paths["study_name"]
-
+    sweep_dir = paths["sweep_dir"]; db_path = paths["db_path"]
+    plots_dir = paths["plots_dir"]; study_name = paths["study_name"]
     os.makedirs(sweep_dir, exist_ok=True)
 
     storage = f"sqlite:///{db_path}"
-    sampler = NSGAIISampler(population_size=args.population, seed=args.seed)
+    sampler = TPESampler(seed=args.seed)
 
     study = optuna.create_study(
-        study_name=study_name,
-        sampler=sampler,
-        directions=["minimize", "minimize"],
-        storage=storage,
-        load_if_exists=True,
+        study_name=study_name, sampler=sampler,
+        direction="minimize", storage=storage, load_if_exists=True,
     )
 
-    n_done = len(
-        [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
-    )
-
+    n_done = len([t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE])
     total_workers = len(gpus) * args.workers_per_gpu
 
-    print("DA sweep — NSGA-II (velsurf, thk)")
+    print("DA sweep — TPE (velsurf)")
     print(f"  Experiment         : {args.experiment}")
     print(f"  Study name         : {study_name}")
-    print(f"  Population size    : {args.population}")
     print(f"  Target n_trials    : {args.n_trials}")
     print(f"  Already completed  : {n_done}")
     print(f"  GPUs               : {gpus}")
@@ -526,66 +416,46 @@ def main():
 
     n_remaining = max(args.n_trials - n_done, 0)
     if not args.plots_only and n_remaining > 0:
-        run_parallel(
-            study,
-            n_trials=n_remaining,
-            gpus=gpus,
-            workers_per_gpu=args.workers_per_gpu,
-            sweep_dir=sweep_dir,
-            experiment=args.experiment,
-        )
+        run_parallel(study, n_trials=n_remaining, gpus=gpus,
+                     workers_per_gpu=args.workers_per_gpu,
+                     sweep_dir=sweep_dir, experiment=args.experiment)
 
-    completed = [
-        t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE
-    ]
+    completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
     if completed:
-        pareto = study.best_trials
-        pareto_numbers = {t.number for t in pareto}
+        best = study.best_trial
+        rows = [{
+            "trial": t.number,
+            "init_slidingco": t.params["init_slidingco"],
+            "init_arrhenius": t.params["init_arrhenius"],
+            "velsurf": t.value,
+            "is_best": t.number == best.number,
+        } for t in completed]
+        rows.sort(key=lambda r: r["velsurf"])
 
-        rows = [
-            {
-                "trial": t.number,
-                **{p: t.params[p] for p in PARAM_NAMES},
-                "velsurf": t.values[0],
-                "thk": t.values[1],
-                "is_pareto": t.number in pareto_numbers,
-            }
-            for t in completed
-        ]
-        rows.sort(key=lambda r: (r["velsurf"], r["thk"]))
-
-        print(f"\n{'=' * 100}")
-        print(f"  PARETO TRIALS ({len(pareto)} of {len(completed)})")
-        print(f"{'=' * 100}")
-        header = (
-            f"  {'trial':>5}  {'reg_thk':>10}  {'thko_std':>9}  "
-            f"{'init_slid':>9}  "
-            f"{'velsurf':>9}  {'thk':>9}"
-        )
-        print(header)
-        for r in rows:
-            if r["is_pareto"]:
-                print(
-                    f"  {r['trial']:>5}  "
-                    f"{r['regularization_thk']:>10.2e}  {r['thkobs_std']:>9.3f}  "
-                    f"{r['init_slidingco']:>9.3f}  "
-                    f"{r['velsurf']:>9.4f}  {r['thk']:>9.4f}"
-                )
+        print(f"\n{'=' * 80}")
+        print(f"  BEST TRIAL (of {len(completed)})")
+        print(f"{'=' * 80}")
+        print(f"  trial {best.number}: velsurf={best.value:.4f}")
+        print(f"      init_slidingco = {best.params['init_slidingco']:.4f}")
+        print(f"      init_arrhenius = {best.params['init_arrhenius']:.3f}")
+        print(f"\n  Top 5 trials:")
+        print(f"  {'trial':>5}  {'init_slid':>9}  {'init_arrh':>9}  {'velsurf':>9}")
+        for r in rows[:5]:
+            mark = "*" if r["is_best"] else " "
+            print(f"  {r['trial']:>5}{mark} {r['init_slidingco']:>9.4f}  "
+                  f"{r['init_arrhenius']:>9.3f}  {r['velsurf']:>9.4f}")
 
         with open(os.path.join(sweep_dir, "sweep_summary.json"), "w") as f:
-            json.dump(
-                {
-                    "experiment": args.experiment,
-                    "sampler": "NSGAIISampler",
-                    "population": args.population,
-                    "seed": args.seed,
-                    "results": rows,
-                    "pareto_trials": sorted(pareto_numbers),
-                    "completed_trials": len(completed),
-                },
-                f,
-                indent=2,
-            )
+            json.dump({
+                "experiment": args.experiment,
+                "sampler": "TPESampler",
+                "seed": args.seed,
+                "best_trial": best.number,
+                "best_params": dict(best.params),
+                "best_velsurf": best.value,
+                "completed_trials": len(completed),
+                "results": rows,
+            }, f, indent=2)
 
         make_plots(study, plots_dir)
 

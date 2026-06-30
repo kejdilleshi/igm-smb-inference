@@ -128,7 +128,7 @@ processes:
     optimization:
       # optimizer: 'adam' or 'lbfgs'
       optimizer: adam
-      nbitmax: 1
+      nbitmax: 100
       learning_rate: 0.1          # Adam only
       regularisation: 0.05
       early_stop_patience: -1

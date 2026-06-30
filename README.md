@@ -56,8 +56,12 @@ one-line invocation plus a YAML clone.
 | Point thickness (`thkobs`) | GlaThiDa (rasterised) | varies per glacier |
 | Glacier outline (`icemask`) | RGI v6 | — |
 
-The end-of-period observation `usurfinfer = topo + dhdt × 20` is synthesised
-from the Hugonnet rate; this is what the SMB inversion fits against.
+The end-of-period observation `usurfinfer` is the COP-DEM 30 (≈2020 anchor —
+fetched separately by `data/oggm/fetch_copdem.py`), and the start surface is
+*derived* from it: `usurfobs = usurfinfer − dhdt × N_YEARS`. `N_YEARS` is a
+CLI flag on `build_input_nc.py` (default 20 → start ≈ Jan 2000; pass
+`--n-years 14` for a Jan 2006 start, etc.). The SMB inversion fits against
+`usurfinfer`.
 
 ### Worked example — Argentière
 
@@ -140,20 +144,70 @@ from the Hugonnet rate; this is what the SMB inversion fits against.
    `z_min.npy`, `dz.npy`, the per-iteration profile PNGs, and a final loss
    curve.
 
-### Comparing the result against an external reference
+### Validation against in-situ stake observations
 
-The Aletsch comparison plot
-[`data/oggm/plot_smb_vs_glamos.py`](data/oggm/plot_smb_vs_glamos.py) is
-GLAMOS-specific (filters by glacier id `B36-26`). For other glaciers with
-non-GLAMOS reference data (e.g. GLACIOCLIM for Argentière, WGMS-FoG for
-others), write a sibling script that:
+The inferred SMB profile is, by construction, the **multi-year mean** balance
+that carries the glacier from its start-of-period geometry to the end-of-period
+geometry. A raw stake reading is a *single-year* point balance, so a direct
+scatter mixes the elevation signal with year-to-year (climate) variability and
+biases the comparison toward the years that happen to be over-sampled.
 
-1. Loads the reference dataset and aggregates `(Alt, SMB)` per 100-m bin.
-2. Loads the inferred profile from `smb_vec.npy` + `z_min.npy` + `dz.npy`,
-   converting from m ice-eq./yr to m w.e./yr (× ρ_ice/ρ_w ≈ 0.917).
-3. Overlays the two as a vertical SMB(z) plot and reports bias / RMSE.
+The validation follows Kneib et al., *The Cryosphere* **18**, 5965–6005 (2024,
+§2.8): rather than comparing the profile to individual stakes, we group stakes
+by horizontal position into **stake bins** and compare against each bin's
+multi-year mean. Each bin = one physical stake observed across many years;
+its mean is therefore a multi-year point balance directly comparable to the
+inferred profile, and its standard deviation is the interannual scatter at that
+location (shown as a thin error bar).
 
-The Aletsch script is the canonical template to copy from.
+This logic lives in
+[`user/code/processes/smb_inference/data/homogenize.py`](user/code/processes/smb_inference/data/homogenize.py).
+It is invoked automatically in two places:
+
+- **During inference** — the per-iteration profile PNG
+  (`smb_inference/smb_vec_iters/smb_vec_iter_*.png`) overlays the qualifying
+  bins (≥10 distinct years) with mean ± std.
+- **After inference** — [`pipeline/compare_smb.py`](pipeline/compare_smb.py)
+  regenerates the same comparison from saved `smb_vec.npy` + `z_min.npy` +
+  `dz.npy` without re-running inference, and prints the per-stake-bin RMSE.
+
+#### Test glaciers
+
+| Glacier | Window | Stake source | Qualifying bins | Span coverage |
+|---|---|---|--:|---|
+| Aletsch (RGI60-11.01450) | 2000–2020 (20 yr) | GLAMOS annual | 2 (terminus 1956 m, head 3341 m) | full window |
+| Rhône (RGI60-11.01238)   | **2006–2020 (14 yr)** | GLAMOS annual | 6–7 between 2246 and 3235 m | full window |
+
+The Rhône window is intentionally **14 years**, not 20: the GLAMOS stake
+network on Rhonegletscher starts in 2006, so matching the inversion window to
+the stake record makes the profile and the bins represent the *same* period.
+The 14-yr window is wired through:
+
+```bash
+# regenerate the IGM-ready NC with usurfobs ≈ Jan 2006
+python data/oggm/build_input_nc.py RGI60-11.01238 --n-years 14
+# regenerate the stake CSV in the same window (script default)
+python data/rhone/build_raw_stakes_csv.py
+# run the pipeline (DA sweep + L-curves + final SMB inference)
+python pipeline/run_pipeline.py --glacier rhone
+```
+
+For Aletsch the default `--n-years 20` and `--start 2000 --end 2020` are
+correct, so:
+
+```bash
+python pipeline/run_pipeline.py --glacier aletsch
+```
+
+#### Adapting to a new glacier
+
+Drop a raw-stake CSV at `data/<glacier>/SMB_<glacier>_<start>-<end>_rawstakes_utm32N.csv`
+with columns `X, Y, Alt, Annual_SMB (m w.e.), Year` (one row per stake-year),
+point `observations.smb_points_file` at it in the experiment YAML, and
+`prepare_stake_overlay` will pick it up. Choose the inversion window so it
+either matches the stake-record span or is fully contained in it — otherwise
+the bins represent a different period than the profile, which the overlay will
+report in its RMSE label but cannot correct.
 
 ### Caveats when generalising beyond the Alps
 
@@ -192,49 +246,6 @@ igm-smb-inference/
 └── README.md
 ```
 
-## Parameter Sweep (Optuna)
-
-An exhaustive grid search over SMB inference hyperparameters using Optuna, with a live Dash dashboard to visualise results.
-
-### Sweep parameters
-
-| Parameter | Values | Count |
-|---|---|---|
-| `nb_layers` | 10, 12 | 2 |
-| `nb_out_filter` | 32, 64 | 2 |
-| `learning_rate` | 0.01, 0.1, 1.0 | 3 |
-| `regularisation` | 1e-5, 1e-3 | 2 |
-| `retrain_emulator_freq` | 5, 10, 20 | 3 |
-| **Total** | | **72 trials** |
-
-### Running the sweep
-
-```bash
-# Terminal 1 (tmux): run the sweep
-conda activate igm
-cd ~/Documents/igm-smb-inference
-python optuna_sweep.py
-```
-
-Each trial calls `igm_run +experiment=params` with Hydra overrides. Results are saved to `sweep_results/trial_XXXX/smb_inference/` (loss history, SMB profile, thickness fields). The study is persisted in SQLite (`sweep_results/optuna_study.db`) and resumes automatically if interrupted.
-
-### Dashboard
-
-```bash
-# Terminal 2: launch the dashboard
-conda activate igm
-pip install dash plotly pandas   # one-time
-python dashboard.py
-# open http://localhost:8050
-```
-
-The dashboard auto-refreshes every 30 seconds and provides:
-
-- **Loss curves overlaid** — all trials on one plot, coloured by any sweep parameter
-- **Parameter importance** — ANOVA-based ranking of which parameters affect the loss most
-- **Box plots** — each parameter vs final loss
-- **Parallel coordinates** — full hyperparameter space visualisation
-- **Top-10 table** — best trials ranked by loss
 
 ## License
 

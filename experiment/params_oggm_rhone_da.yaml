@@ -69,7 +69,6 @@ processes:
     cost_list:
       - velsurf
       - icemask
-      - thk
     optimization:
       nbitmax: 1000
       step_size: 0.9
@@ -81,7 +80,6 @@ processes:
       patience: 200
     fitting:
       velsurfobs_std: 2.1
-      thkobs_std: 16.0
     regularization:
       thk: 328.0
       smooth_anisotropy_factor: 1.0

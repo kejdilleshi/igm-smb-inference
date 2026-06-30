@@ -33,8 +33,8 @@ GLAMOS_CSV  = os.path.normpath(os.path.join(HERE, "..", "massbalance_observation
 INPUT_NC    = os.path.normpath(os.path.join(HERE, "..", "input_aletsch.nc"))
 GLACIER_ID  = "B36-26"        # Grosser Aletschgletscher (Swiss Glacier Inventory)
 
-START_YEAR  = 2009            # hydrological year start: START_YEAR-10-01
-END_YEAR    = 2017            # last hydro year end: END_YEAR-09-30 (exclusive of new year)
+START_YEAR  = 2000            # hydrological year start: START_YEAR-10-01
+END_YEAR    = 2020            # last hydro year end: END_YEAR-09-30 (exclusive of new year)
 
 OUT_CSV     = os.path.join(HERE, f"SMB_aletsch_{START_YEAR}-{END_YEAR}_utm32N.csv")
 

@@ -37,6 +37,8 @@ from core.glacier import GlacierDynamicsCheckpointed
 from core.inversion import _eval_pair
 from core.smb import update_smb_profile
 from data.loader import load_observations_from_nc, load_smb_point_obs
+from data.homogenize import (
+    prepare_stake_overlay, draw_anchor_overlay, draw_raw_stake_overlay)
 from visualization.plots import plot_loss_components
 from utils.emulator_tools import compute_divflux
 from config.read_config import Config
@@ -224,13 +226,18 @@ def _run_profile_inversion(cfg, smb_cfg, glacier_model, observation, topg, H_ini
     rho_w = 1000.0
     ice_to_we = rho_ice / rho_w  # ≈ 0.917
 
-    obs_alts, obs_smb = None, None
+    # Group stakes by horizontal position once (Kneib-2024 style): each
+    # qualifying cell is one stake observed across many years; its multi-year
+    # mean is directly comparable to the inferred multi-year profile.
+    stake_prep = None
     smb_points_file = getattr(smb_cfg.observations, "smb_points_file", "") or ""
     if smb_points_file and os.path.exists(smb_points_file):
         try:
-            obs_alts, obs_smb = load_smb_point_obs(smb_points_file, to_ice_eq=False)
-            print(f"[smb_inference] Loaded {len(obs_alts)} SMB stake points "
-                  f"from {smb_points_file} (kept in m w.e./yr)")
+            stake_prep = prepare_stake_overlay(smb_points_file)
+            if stake_prep is not None:
+                print(f"[smb_inference] {stake_prep['clu_alt'].size} stake "
+                      f"bins (≥{stake_prep['cluster_min_years']} yr) over "
+                      f"{stake_prep['period']} from {smb_points_file}")
         except Exception as e:
             print(f"[smb_inference] Could not load {smb_points_file}: {e}")
 
@@ -243,15 +250,14 @@ def _run_profile_inversion(cfg, smb_cfg, glacier_model, observation, topg, H_ini
         z_axis = float(z_min) + float(dz) * np.arange(smb_values.shape[0])
         fig, ax = plt.subplots(figsize=(5, 8))
         ax.plot(smb_we, z_axis, "-o", markersize=3, label="profile")
-        if obs_alts is not None:
-            ax.scatter(obs_smb, obs_alts, s=18, c="tab:red", alpha=0.7,
-                       edgecolors="k", linewidths=0.4, zorder=5,
-                       label="stakes (m w.e./yr)")
-            if len(obs_alts) >= 1:
-                smb_at_stakes = np.interp(obs_alts, z_axis, smb_we)
-                resid = obs_smb - smb_at_stakes
-                rmse = float(np.sqrt(np.mean(resid ** 2)))
-                ax.plot([], [], " ", label=f"profile vs stakes RMSE={rmse:.3f}")
+        if stake_prep is not None:
+            # Multi-year stakes (Year column) -> repeat-cell anchors; single-
+            # snapshot stakes (no Year / no clusters, e.g. Argentiere) -> raw
+            # points + profile-vs-stakes RMSE.
+            if stake_prep["clu_alt"].size:
+                draw_anchor_overlay(ax, stake_prep, z_axis, smb_we)
+            else:
+                draw_raw_stake_overlay(ax, stake_prep, z_axis, smb_we)
             ax.legend(loc="best", fontsize=8)
         ax.axvline(0.0, color="k", linewidth=0.5)
         ax.set_xlabel("SMB (m w.e./yr)")
@@ -663,6 +669,9 @@ def initialize(cfg, state):
         np.save(os.path.join(outdir, "thk_optimized.npy"), H_sim.numpy())
         np.save(os.path.join(outdir, "thk_observed.npy"), observation.numpy())
         np.save(os.path.join(outdir, "loss_history.npy"), np.array(loss_history))
+        # data-fidelity term (surface RMSE) per iter — the SMB L-curve reads
+        # this final value as the data-misfit axis (vs profile roughness).
+        np.save(os.path.join(outdir, "data_history.npy"), np.array(data_history))
         if hasattr(state, "smb_vec"):
             np.save(os.path.join(outdir, "smb_vec.npy"), state.smb_vec.numpy())
         if hasattr(state, "smb_z_min"):
@@ -672,6 +681,22 @@ def initialize(cfg, state):
         if hasattr(state, "smb") and state.smb is not None:
             np.save(os.path.join(outdir, "smb_field.npy"), state.smb.numpy())
             np.save(os.path.join(outdir, "smb_profile.npy"), smb_vec.numpy())
+
+        # Mass-balance diagnostic fields (dh/dt + div(flux) = smb), on the
+        # cropped model grid so plot_smb_results.py can bin them by elevation.
+        # The flux divergence is NOT recomputed here — the continuity estimate
+        # uses div(flux) straight from the DA output (geology-optimized.nc).
+        #   • modeled surface — elevation axis for the binning
+        #   • Hugonnet dh/dt as loaded onto the state from the input .nc
+        np.save(os.path.join(outdir, "usurf_modeled.npy"), (topg + H_sim).numpy())
+
+        if hasattr(state, "dhdt") and state.dhdt is not None:
+            np.save(
+                os.path.join(outdir, "dhdt_obs.npy"),
+                tf.cast(state.dhdt, tf.float32).numpy(),
+            )
+        else:
+            print("[smb_inference] state.dhdt not available; skipping dhdt_obs.npy")
 
         print(f"[smb_inference] Results saved to {outdir}")
 

@@ -1,0 +1,125 @@
+# @package _global_
+#
+# DA-only, THICKNESS-AWARE sweep stage for Glacier d'Argentière.
+# Companion to optuna_sweep_da_velthk.py (multi-objective velsurf + thk sweep
+# over the two SCALAR physics params init_slidingco / init_arrhenius).
+#
+# Differs from params_oggm_argentiere_da.yaml (the velsurf-only sweep config):
+#   * cost_list ADDS `thk` -> the measured radar thickness (thkobs, 147 pts)
+#     is scored, so costs.dat carries a `thk` column the sweep reads as its
+#     second objective.
+#   * fitting/regularization/scaling mirror the final run
+#     (params_oggm_argentiere.yaml) so the swept scalars transfer to it.
+#   * control_list = [thk] only -> slidingco AND arrhenius stay fixed uniform
+#     scalars (NOT 2D DA controls). The sweep also forces this on the CLI.
+# No smb_inference stage here: this config is DA-only for speed.
+
+core:
+  hardware:
+    visible_gpus: [0]
+
+defaults:
+  - override /inputs:
+    - local
+  - override /processes:
+    - iceflow
+    - data_assimilation
+
+inputs:
+  local:
+    filename: input_argentiere.nc
+    crop:
+      xmin: 340310.0
+      xmax: 349366.0
+      ymin: 5085870.0
+      ymax: 5094774.0
+
+processes:
+  iceflow:
+    physics:
+      init_slidingco: 0.46   # swept (scalar); overridden per-trial
+      sliding:
+        weertman:
+          u_ref: 100.0
+    emulator:
+      network:
+        architecture: SIADecompNet
+    numerics:
+      Nz: 2
+      basis_vertical: molho
+      basis_horizontal : q1
+      precision: single
+    method: unified
+    unified:
+      display:
+        print_cost: true
+        print_cost_freq: 50
+      inputs: [thk, usurf, slidingco, arrhenius, dX]
+      bcs: []
+      mapping: network
+      optimizer: lbfgs
+      lbfgs:
+        memory: 20
+      line_search: hager-zhang
+      nbit: -1
+      nbit_warmup: -1
+      nbit_init: -1
+      retrain_freq: 1000000
+      network:
+        pretrained_path: "/home/klleshi/Documents/igm-examples/aletsch/SIADecompNet_18x80_dil1-32/"
+        pretrained: true
+        print_summary: true
+        old_format: false
+
+  data_assimilation:
+    # control = thk ONLY -> slidingco/arrhenius are fixed uniform scalars.
+    # cost includes thk -> honours the measured radar thickness profile.
+    control_list:
+      - thk
+    cost_list:
+      - velsurf
+      - icemask
+      - thk
+    optimization:
+      nbitmin: 50
+      nbitmax: 1000
+      step_size: 0.9
+      retrain_iceflow_model: true
+      fix_opti_normalization_issue: true
+      obstacle_constraint: ['reproject']
+      step_size_decay: 0.95
+      pertubate: True
+      patience: 200
+    fitting:
+      usurfobs_std: 2.0
+      velsurfobs_std: 2.1
+      thkobs_std: 11.964981600016369
+      uniformize_thkobs: true
+    regularization:
+      thk: 328.0
+      thk_1st_der: 100.0
+      thk_2nd_der: 1000000.0
+      slidingco: 10491954.33226791   # unused (slidingco not a control)
+      arrhenius: 10.0                # unused (arrhenius not a control)
+      smooth_anisotropy_factor: 1.0
+      convexity_weight: 0.0
+      to_regularize: thk
+    scaling:
+      thk: 1
+      usurf: 0.5
+      slidingco: 0.023270677083837805
+      arrhenius: 0.1
+    output:
+      plot2d_live: false
+      save_result_in_ncdf: geology-optimized.nc
+      save_iterat_in_ncdf: true
+      vars_to_save:
+        - usurf
+        - thk
+        - slidingco
+        - velbase_mag
+        - velsurf_mag
+        - velsurfobs_mag
+        - divflux
+        - icemask
+        - arrhenius
