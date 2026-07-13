@@ -46,7 +46,7 @@ sys.path.insert(0, os.path.join(PROJECT_DIR, "user", "code", "processes", "smb_i
 
 from run_pipeline import GLACIERS, FIXED_SMB_REG, run  # noqa: E402
 
-INSITU = ["aletsch_insitu", "rhone_insitu"]
+INSITU = ["aletsch_insitu", "rhone_insitu", "argentiere"]
 
 
 # ── slidingco selection ───────────────────────────────────────────────────────
@@ -73,15 +73,17 @@ def select_slidingco(glacier, cutoff, thin_ratio, max_points):
 
 # ── per-run execution (mirrors run_pipeline.stage_final) ──────────────────────
 
-def run_one(glacier, slid, arrh, reg_thk, out_dir, gpu, nbitmax, dry):
+def run_one(glacier, slid, arrh, reg_thk, out_dir, gpu, nbitmax, dry,
+            smb_reg=FIXED_SMB_REG, extra=()):
     experiment = f"params_oggm_{glacier}"
     cmd = [
         "igm_run", f"+experiment={experiment}",
         f"processes.iceflow.physics.init_slidingco={slid}",
         f"processes.iceflow.physics.init_arrhenius={arrh}",
         f"processes.data_assimilation.regularization.thk={reg_thk}",
-        f"processes.smb_inference.optimization.regularisation={FIXED_SMB_REG}",
+        f"processes.smb_inference.optimization.regularisation={smb_reg}",
         f"hydra.run.dir={out_dir}",
+        *extra,
     ]
     if nbitmax is not None:
         cmd.append(f"processes.data_assimilation.optimization.nbitmax={nbitmax}")
@@ -243,6 +245,11 @@ def main():
                     help="min multiplicative spacing between kept slidingco (default 1.25)")
     ap.add_argument("--max-points", type=int, default=5)
     ap.add_argument("--gpu", type=int, default=0)
+    ap.add_argument("--smb-reg", type=float, default=FIXED_SMB_REG,
+                    help=f"SMB-inversion regularisation (default {FIXED_SMB_REG})")
+    ap.add_argument("--extra", action="append", default=[],
+                    help="extra igm_run override, repeatable (e.g. "
+                         "'processes.data_assimilation.cost_list=[velsurf,icemask]')")
     ap.add_argument("--nbitmax", default=None, help="override DA nbitmax (smoke test)")
     ap.add_argument("--rho-ice", type=float, default=917.0)
     ap.add_argument("--skip-run", action="store_true", help="only (re)build the overlay")
@@ -264,7 +271,9 @@ def main():
     os.makedirs(sens_dir, exist_ok=True)
 
     print(f"=== slidingco sensitivity: {g} ===")
-    print(f"  fixed arrhenius = {arrh:.3f}   reg.thk = {reg_thk:g}   smb reg = {FIXED_SMB_REG}")
+    print(f"  fixed arrhenius = {arrh:.3f}   reg.thk = {reg_thk:g}   smb reg = {args.smb_reg}")
+    if args.extra:
+        print(f"  extra overrides: {args.extra}")
     print(f"  slidingco values ({len(chosen)}):")
     for r in chosen:
         vs = "" if math.isnan(r['velsurf']) else f"  (sweep velsurf={r['velsurf']:.3f})"
@@ -276,7 +285,8 @@ def main():
         out_dir = os.path.join(sens_dir, f"slid_{v:.4f}")
         runs.append({"slid": v, "arrh": arrh, "dir": out_dir})
         if not args.skip_run:
-            run_one(g, v, arrh, reg_thk, out_dir, args.gpu, args.nbitmax, args.dry_run)
+            run_one(g, v, arrh, reg_thk, out_dir, args.gpu, args.nbitmax, args.dry_run,
+                    smb_reg=args.smb_reg, extra=args.extra)
             stakes = stake_csv_for(g)
             run([sys.executable, "plot_smb_results.py", "--root", out_dir,
                  "--input-nc", os.path.join("data", f"input_{GLACIERS[g].replace('-', '_')}.nc")],

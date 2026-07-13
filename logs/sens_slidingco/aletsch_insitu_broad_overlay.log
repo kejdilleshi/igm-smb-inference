@@ -1,0 +1,19 @@
+=== slidingco sensitivity: aletsch_insitu ===
+  fixed arrhenius = 182.147   reg.thk = 1000   smb reg = 0.05
+  slidingco values (6):
+    0.1536
+    0.1991
+    0.2689
+    0.4592
+    0.7442
+    1.0779
+[overlay] wrote /home/klleshi/Documents/igm-smb-inference/results/aletsch_insitu/sens_slidingco/overlay_aletsch_insitu.png
+[overlay] wrote /home/klleshi/Documents/igm-smb-inference/results/aletsch_insitu/sens_slidingco/summary_aletsch_insitu.csv
+
+   slid    arrh  velsurf  meanSMB    ELA
+  0.154   182.1    9.940   -3.344   3127
+  0.199   182.1   10.143   -3.171   3183
+  0.269   182.1   11.364   -2.885   3198
+  0.459   182.1   24.838   -2.912   3183
+  0.744   182.1   61.337   -1.563   3199
+  1.078   182.1  144.751   -2.042   3112

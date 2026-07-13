@@ -1,0 +1,81 @@
+\appendix
+\section{Appendix}
+
+\subsection{GPR-assisted sliding-field inversion on Argentière}\label{app:gpr}
+
+The main analysis fixes the basal sliding coefficient $\tau_{\mathrm{ref}}$ to a
+single scalar, so that all three glaciers are treated identically and no
+thickness survey is required. Where dense auxiliary data \emph{do} exist, however,
+the same differentiable framework can exploit them to sharpen the dynamical state.
+Argentière is covered by repeated ground-penetrating-radar (GPR) soundings of ice
+thickness \citep{rabatel2018}; here we show that assimilating them, and relaxing
+$\tau_{\mathrm{ref}}$ from a scalar into a spatial field
+$\tau_{\mathrm{ref}}(\mathbf{x})$ inverted jointly with the thickness, further
+improves the fit and surpasses the state of the art.
+
+The GPR soundings supply an independent thickness constraint (the second term of
+Eq.~\ref{eq:da}, over the survey footprint $\Omega_{\mathrm{thk}}$) that makes the
+joint inversion identifiable. The data assimilation then retrieves both the
+ice-thickness field $H_{t_1}$ and the basal-sliding field
+$\tau_{\mathrm{ref}}(\mathbf{x})$ that together reproduce the observed surface
+velocity and the GPR transects, converging within $10^2$ L-BFGS iterations
+(Fig.~\ref{fig:da-app}). Modelled velocities match the observations to a
+root-mean-square residual of $3\,\mathrm{m\,yr^{-1}}$, and the calibrated thickness
+departs from the GPR transects by $\mathrm{RMS}=12\,\mathrm{m}$ (bias
+$-9\,\mathrm{m}$), of the order of the GPR uncertainty itself. The recovered sliding
+field shows the physically expected structure---enhanced along the central flowline
+and reduced near the lateral margins---consistent with the finding of
+\citet{kneib2024} that spatial variability in the sliding coefficient helps explain
+the observed surface velocities.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figs/argentiere_da_panel.png}
+    \caption{GPR-assisted data-assimilation state on Argentière Glacier at the start
+    epoch. (a)~Calibrated ice thickness $H_{t_1}$ and (b)~calibrated basal-sliding
+    field $\tau_{\mathrm{ref}}(\mathbf{x})$; (c)~surface-velocity residual
+    $u_s - u_s^{\mathrm{obs}}$, near zero across the glacier (overall
+    $\mathrm{RMS} = 3\,\mathrm{m\,yr^{-1}}$; white cells lack a velocity
+    observation).}
+    \label{fig:da-app}
+\end{figure}
+
+Holding this calibrated state fixed, the transient inversion (2012--2021) yields the
+elevation-resolved SMB profile of Fig.~\ref{fig:smb-app}. The simulated
+end-of-window thickness matches the target across the trunk to within the
+DEM-differencing uncertainty (Fig.~\ref{fig:thk-app}; residual $\mathrm{RMS}
+=24\,\mathrm{m}$, small and largely unbiased). Validated against the GLACIOCLIM
+network, the profile reproduces the observed altitudinal pattern with a
+root-mean-square error of $0.45\,\mathrm{m\,w.e.\,yr^{-1}}$---lower than the
+velocity-only result of the main text ($0.65$) and below every previously published
+distributed reconstruction on this site over this period, including all three
+baselines of \citet{kneib2024} ($0.50$--$0.85\,\mathrm{m\,w.e.\,yr^{-1}}$;
+Table~\ref{tab:rmse}). The residual structured misfit in Fig.~\ref{fig:thk-app}(c)
+reflects horizontal variability within elevation bands---notably the avalanche-fed
+accumulation hotspots \citep{kneib2024}---that the one-dimensional profile does not
+represent.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.55\linewidth]{figs/argentiere_smb_profile.png}
+    \caption{Inferred elevation-resolved SMB profile $\beta(z)$ (blue) for Argentière
+    over 2012--2021 from the GPR-assisted inversion, in water equivalent. Orange dots
+    are the 2012--2021 mean GLACIOCLIM stake balances, plotted at the elevation of
+    each stake. The profile spans 1670--3610\,m\,a.s.l.\ and matches the stakes with
+    $\mathrm{RMSE}=0.45\,\mathrm{m\,w.e.\,yr^{-1}}$.}
+    \label{fig:smb-app}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figs/argentiere_thk_comparison.png}
+    \caption{End-of-window ice-thickness fit on Argentière ($t_2 = 2021$), masked to
+    the glacier footprint. (a)~Target thickness $H^{\mathrm{obs}}(\cdot, t_2)$ from
+    the observed surface DEM and the calibrated bedrock; (b)~simulated thickness
+    $H^{\mathrm{sim}}(\cdot, t_2)$ from the forward run under the inferred SMB
+    profile; (c)~their residual $H^{\mathrm{sim}}-H^{\mathrm{obs}}$
+    (RMS $24\,\mathrm{m}$). The residual is small and largely unbiased; its
+    spatially structured component reflects horizontal variability within elevation
+    bands that the one-dimensional profile does not represent.}
+    \label{fig:thk-app}
+\end{figure}

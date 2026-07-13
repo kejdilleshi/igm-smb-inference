@@ -57,12 +57,22 @@ def fill_nan_nearest(arr):
     return out
 
 
-def rasterize_glathida(csv_path, x, y, icemask):
+def rasterize_glathida(csv_path, x, y, icemask, survey_year=None):
     """Bin GlaThiDa point thicknesses onto the (y, x) grid by mean per pixel,
     matching IGM's read_glathida_v6/v7 recipe. CSV columns x_proj, y_proj are
-    already in the OGGM gdir's local TMerc, so no reprojection needed."""
+    already in the OGGM gdir's local TMerc, so no reprojection needed.
+
+    If ``survey_year`` is given, only GPR points whose survey ``date`` falls in
+    that calendar year are kept, so thkobs reflects a single, DA-consistent
+    campaign (e.g. Aletsch 2009, Rhône 2008) instead of all campaigns mixed."""
     df = pd.read_csv(csv_path)
     df = df[df["thickness"] > 0]
+    if survey_year is not None:
+        yrs = pd.to_datetime(df["date"], errors="coerce").dt.year
+        before = len(df)
+        df = df[yrs == int(survey_year)]
+        print(f"  GlaThiDa: survey-year filter {int(survey_year)} kept "
+              f"{len(df)}/{before} points")
     n_total = len(df)
 
     dx = float(x[1] - x[0])
@@ -91,7 +101,7 @@ def rasterize_glathida(csv_path, x, y, icemask):
     return out
 
 
-def main(rgi_id, n_years=DEFAULT_N_YEARS):
+def main(rgi_id, n_years=DEFAULT_N_YEARS, survey_year=None):
     N_YEARS = float(n_years)
     start_yr = int(round(2020 - N_YEARS))
     gdir = os.path.join(HERE, rgi_id)
@@ -203,7 +213,9 @@ def main(rgi_id, n_years=DEFAULT_N_YEARS):
     print(f"   Millan22 vx/vy: {n_vx_valid}/{n_ice} on-glacier pixels valid")
 
     # GlaThiDa thkobs (rasterized point cloud).
-    thkobs = rasterize_glathida(glathida, x, y, icemask)
+    thkobs = rasterize_glathida(glathida, x, y, icemask, survey_year=survey_year)
+    thkobs_note = (f"GlaThiDa {int(survey_year)} survey, rasterized"
+                   if survey_year is not None else "GlaThiDa, rasterized")
 
     # icemaskobs = icemask ∧ obs are all finite (matches Argentière pipeline).
     invalid_obs = (np.isnan(usurfobs) | np.isnan(usurfinfer)
@@ -243,7 +255,7 @@ def main(rgi_id, n_years=DEFAULT_N_YEARS):
         add("usurfinfer",  usurfinfer, "m",       "End-of-period Surface Topography (COP-DEM 30, ≈ Jan 2020 anchor)")
         add("thkinit",     thkinit,    "m",       "Ice Thickness prior (Millan 2022)")
         add("thk",         thkinit,    "m",       "Ice Thickness (DA initial state, copy of thkinit)")
-        add("thkobs",      thkobs,     "m",       "Ice Thickness Observations (GlaThiDa, rasterized)")
+        add("thkobs",      thkobs,     "m",       f"Ice Thickness Observations ({thkobs_note})")
         add("uvelsurfobs", vx,         "m/y",     "x surface velocity of ice (Millan 2022, ~2017-18)")
         add("vvelsurfobs", vy,         "m/y",     "y surface velocity of ice (Millan 2022, ~2017-18)")
         add("dhdt",        dhdt,       "m/y",     "Hugonnet 2021 mean dh/dt 2000-2020")
@@ -269,5 +281,9 @@ if __name__ == "__main__":
                     help=f"Hugonnet window length (default {DEFAULT_N_YEARS:g} → "
                          f"start ≈ Jan {int(2020 - DEFAULT_N_YEARS)}). Use 14 for a "
                          f"2006-anchored start.")
+    ap.add_argument("--survey-year", type=int, default=None,
+                    help="Keep only GlaThiDa GPR points from this survey year "
+                         "(e.g. 2009 for Aletsch, 2008 for Rhône). Default: all "
+                         "campaigns mixed.")
     args = ap.parse_args()
-    main(args.rgi_id, n_years=args.n_years)
+    main(args.rgi_id, n_years=args.n_years, survey_year=args.survey_year)

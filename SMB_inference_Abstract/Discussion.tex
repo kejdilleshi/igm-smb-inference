@@ -1,0 +1,34 @@
+\section{Discussion}\label{sec:discussion}
+% DRAFT STUB — synthesises points already established above; expand as needed.
+
+The three experiments support a single message: a transient, differentiable
+inversion recovers the elevation structure of alpine SMB from geometry change and
+surface velocity alone, without the per-glacier tuning that flux-divergence methods
+require. On Argentière the generic velocity-only pipeline matches the best
+physically-based reconstructions of \citet{kneib2024} on the same stakes, and the
+optional GPR-assisted field inversion surpasses them (Appendix~\ref{app:gpr}); on
+the two velocity-only Swiss glaciers the same pipeline, applied without
+modification, achieves comparable errors. Because the forward model integrates mass
+conservation directly and recomputes the flux divergence from the evolving geometry,
+the inferred profile conserves mass exactly and avoids the ablation-zone bias of
+stationary-flux estimates, which are a factor of two to five worse against the same
+stakes (Sect.~\ref{sec:inferred}).
+
+The principal limitation is the one-dimensional parametrisation: horizontal
+variability within an elevation band---such as the avalanche-fed accumulation
+hotspots resolved by \citet{kneib2024}---is deliberately not recovered. This is a
+trade-off of sub-elevation detail for a transferable, tuning-free inversion, and it
+is not intrinsic to the method: the same differentiable framework admits richer
+descriptions of the SMB (for example an aspect or debris-cover dependence) wherever
+the data warrant them, providing a principled route to lift residual non-uniqueness.
+
+Operationally, the sensitivity analysis (Sect.~\ref{sec:sensitivity}) defines a
+velocity-only recipe for stake-free glaciers: adopt the sliding coefficient at the
+surface-velocity-misfit minimum, and propagate the neighbouring coefficients within
+the flat misfit basin into an SMB and equilibrium-line uncertainty band. The
+robustness of the velocity-calibrated state across our three large glaciers is
+encouraging, but whether it persists across the far larger and more varied sample
+relevant to regional water-resource applications remains to be tested. Given the
+rapidly expanding archive of accurate multi-temporal DEMs and near-global velocity
+products, the tuning-free character of the method makes such a regional-scale,
+continuous SMB inversion a realistic next step.

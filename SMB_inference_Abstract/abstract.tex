@@ -1,20 +1,3 @@
 \begin{abstract}
-The distributed surface mass balance (SMB) of mountain glaciers is a key forcing
-for projecting glacier evolution and subsequent meltwater availability. Yet,
-direct in situ observations cover less than 0.2\,\% of the world's glacierised
-area. Here, we present a new SMB inference method, implemented within the
-open-source Instructed Glacier Model (IGM), that recasts the problem as a fully
-differentiable transient inversion. We first assimilate observed surface ice
-speeds at one snapshot, then run a forward simulation between two epochs of known
-surface elevation under a candidate SMB. Automatic differentiation through the
-forward run yields the gradient of a geometry-misfit cost function with respect
-to the SMB, enabling gradient-based optimisation of the latter. We apply the
-method to three glaciers in the Alps---Argentière, Great Aletsch and Rhône---and
-validate the inferred profiles against in situ stake measurements, outperforming
-the distributed reconstruction of Kneib and others (2024) on Argentière. A
-sensitivity test shows that the surface-velocity misfit alone bounds the inferred
-SMB on stake-free glaciers. Our method is generic, computationally efficient and
-requires no glacier-specific tuning, making it readily transferable to any
-glacier with accurate multi-temporal DEMs and surface velocities, opening a
-path toward regional-scale SMB inversion.
+The distributed surface mass balance (SMB) of mountain glaciers is a key forcing for glacier evolution and subsequent meltwater availability projections. Yet, direct in situ observations cover less than 0.2\,\% of the world's glacierised area. Here, we present a new SMB inference method, implemented within the open-source Instructed Glacier Model (IGM), that recasts the problem as a fully differentiable transient inversion. The inversion scheme uses observed surface velocities to initialize a dynamically consistent glacier model, then inverts multi-temporal surface elevation changes (DEMs) to estimate the spatial distribution of surface mass balance that best explains the observed glacier evolution. We apply the method to three glaciers in the Alps---Argentière, Great Aletsch and Rhône---evaluating all three with a single, glacier-independent pipeline in which the basal sliding coefficient is fixed by an ensemble search on the surface-velocity misfit alone, and validate the inferred SMB against in situ stake measurements. A sensitivity test shows that this velocity misfit bounds the inferred SMB on stake-free glaciers. Our method is generic, computationally efficient and requires no glacier-specific tuning, making it readily transferable to any glacier with accurate multi-temporal DEMs and surface velocities, opening a path toward regional-scale, continuous SMB inferences.
 \end{abstract}

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2024.9.26)  29 JUN 2026 13:34
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2024.9.26)  13 JUL 2026 09:11
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -574,7 +574,7 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <10.95> on input line 40.
  (./abstract.tex
-Overfull \hbox (1.67657pt too wide) in paragraph at lines 1--20
+Overfull \hbox (1.67657pt too wide) in paragraph at lines 1--3
 []\T1/lmr/bx/n/10.95 ABSTRACT. The dis-tributed sur-face mass bal-ance (SMB) of
  moun-tain glaciers
  []
@@ -584,113 +584,100 @@ r/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}
 
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}]
 
-Package natbib Warning: Citation `glamos' on page 2 undefined on input line 29.
+Package natbib Warning: Citation `glamos' on page 2 undefined on input line 11.
 
 
-[2]
-
-LaTeX Warning: Reference `sec:discussion' on page 3 undefined on input line 83.
-
-
-[3{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/en
-c/dvips/lm/lm-mathit.enc}]
-
-LaTeX Warning: Reference `sec:discussion' on page 4 undefined on input line 100
-.
-
-) (./Methodology.tex [4]
-<figs/Aletsch_pannel.png, id=30, 1063.975pt x 716.6775pt>
-File: figs/Aletsch_pannel.png Graphic file (type png)
-<use figs/Aletsch_pannel.png>
-Package pdftex.def Info: figs/Aletsch_pannel.png  used on input line 40.
-(pdftex.def)             Requested size: 329.19528pt x 221.74124pt.
- [5{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathex.enc} <./figs/Aletsch_pannel.p
-ng>] [6]
-
-Package natbib Warning: Citation `liunocedal1989' on page 7 undefined on input 
-line 165.
-
-
-Package natbib Warning: Citation `griewank2000' on page 7 undefined on input li
-ne 178.
-
-) (./Results.tex [7] [8]
-<figs/argentiere_da_panel.png, id=49, 686.565pt x 191.844pt>
-File: figs/argentiere_da_panel.png Graphic file (type png)
-<use figs/argentiere_da_panel.png>
-Package pdftex.def Info: figs/argentiere_da_panel.png  used on input line 49.
-(pdftex.def)             Requested size: 506.45905pt x 141.51738pt.
+[2] [3]) (./Methodology.tex [4{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.en
+c}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}]
+<figs/Glacier_SMB_Evolution_Workflow.pdf, id=29, 794.97pt x 614.295pt>
+File: figs/Glacier_SMB_Evolution_Workflow.pdf Graphic file (type pdf)
+<use figs/Glacier_SMB_Evolution_Workflow.pdf>
+Package pdftex.def Info: figs/Glacier_SMB_Evolution_Workflow.pdf  used on input
+ line 43.
+(pdftex.def)             Requested size: 506.45905pt x 391.3665pt.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 56.
+(Font)              <10> on input line 54.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 56.
+(Font)              <7> on input line 54.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 56.
+(Font)              <5> on input line 54.
+ (./Data.tex)
+
+Package natbib Warning: Citation `liunocedal1989' on page 5 undefined on input 
+line 77.
+
+[5{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathex.enc}] [6 <./figs/Glacier_SMB_E
+volution_Workflow.pdf>] [7] [8]
+
+Package natbib Warning: Citation `liunocedal1989' on page 9 undefined on input 
+line 185.
 
 
-LaTeX Warning: Reference `sec:discussion' on page 9 undefined on input line 88.
+Package natbib Warning: Citation `griewank2000' on page 9 undefined on input li
+ne 199.
 
-
-[9 <./figs/argentiere_da_panel.png>]
-<figs/smb_vec_iter_0041.png, id=57, 361.35pt x 578.16pt>
-File: figs/smb_vec_iter_0041.png Graphic file (type png)
-<use figs/smb_vec_iter_0041.png>
-Package pdftex.def Info: figs/smb_vec_iter_0041.png  used on input line 99.
-(pdftex.def)             Requested size: 101.29025pt x 162.06013pt.
-<figs/argentiere_thk_comparison.png, id=58, 686.8935pt x 197.757pt>
-File: figs/argentiere_thk_comparison.png Graphic file (type png)
-<use figs/argentiere_thk_comparison.png>
-Package pdftex.def Info: figs/argentiere_thk_comparison.png  used on input line
- 111.
-(pdftex.def)             Requested size: 506.45905pt x 145.81284pt.
-
-
-LaTeX Warning: Reference `fig:thk-transfer' on page 10 undefined on input line 
-157.
-
-[10 <./figs/smb_vec_iter_0041.png>]
-<figs/smb_vs_continuity_aletsch.png, id=63, 433.62pt x 650.43pt>
+<figs/smb_loss_curve.png, id=96, 722.7pt x 433.62pt>
+File: figs/smb_loss_curve.png Graphic file (type png)
+<use figs/smb_loss_curve.png>
+Package pdftex.def Info: figs/smb_loss_curve.png  used on input line 207.
+(pdftex.def)             Requested size: 303.87851pt x 182.32426pt.
+) (./Results.tex [9] [10 <./figs/smb_loss_curve.png>]
+<figs/smb_vs_continuity_argentiere.png, id=106, 426.393pt x 640.67355pt>
+File: figs/smb_vs_continuity_argentiere.png Graphic file (type png)
+<use figs/smb_vs_continuity_argentiere.png>
+Package pdftex.def Info: figs/smb_vs_continuity_argentiere.png  used on input l
+ine 64.
+(pdftex.def)             Requested size: 303.87851pt x 456.60196pt.
+ [11] [12 <./figs/smb_vs_continuity_argentiere.png>]
+<figs/smb_vs_continuity_aletsch.png, id=115, 433.62pt x 650.43pt>
 File: figs/smb_vs_continuity_aletsch.png Graphic file (type png)
 <use figs/smb_vs_continuity_aletsch.png>
 Package pdftex.def Info: figs/smb_vs_continuity_aletsch.png  used on input line
- 161.
-(pdftex.def)             Requested size: 227.90501pt x 341.858pt.
-<figs/smb_vs_continuity_rhone.png, id=64, 433.62pt x 650.43pt>
+ 112.
+(pdftex.def)             Requested size: 243.09818pt x 364.65515pt.
+<figs/smb_vs_continuity_rhone.png, id=116, 433.62pt x 650.43pt>
 File: figs/smb_vs_continuity_rhone.png Graphic file (type png)
 <use figs/smb_vs_continuity_rhone.png>
 Package pdftex.def Info: figs/smb_vs_continuity_rhone.png  used on input line 1
-63.
-(pdftex.def)             Requested size: 227.90501pt x 341.858pt.
-
-
-LaTeX Warning: Reference `tab:transfer' on page 11 undefined on input line 182.
-
-
-
-LaTeX Warning: Reference `tab:transfer' on page 11 undefined on input line 194.
-
-
-[11 <./figs/argentiere_thk_comparison.png>] [12 <./figs/smb_vs_continuity_alets
-ch.png> <./figs/smb_vs_continuity_rhone.png>] [13]
-<figs/sens_slidingco_aletsch.png, id=78, 354.3639pt x 494.3268pt>
-File: figs/sens_slidingco_aletsch.png Graphic file (type png)
-<use figs/sens_slidingco_aletsch.png>
-Package pdftex.def Info: figs/sens_slidingco_aletsch.png  used on input line 26
-6.
-(pdftex.def)             Requested size: 227.90501pt x 317.92188pt.
-<figs/sens_slidingco_rhone.png, id=79, 354.123pt x 494.3268pt>
-File: figs/sens_slidingco_rhone.png Graphic file (type png)
-<use figs/sens_slidingco_rhone.png>
-Package pdftex.def Info: figs/sens_slidingco_rhone.png  used on input line 268.
-
-(pdftex.def)             Requested size: 227.90501pt x 318.14816pt.
-
-
-LaTeX Warning: Reference `sec:discussion' on page 14 undefined on input line 28
-3.
-
-) [14 <./figs/sens_slidingco_aletsch.png> <./figs/sens_slidingco_rhone.png>]
-[15] (./main.bbl [16] [17])
+14.
+(pdftex.def)             Requested size: 243.09818pt x 364.65515pt.
+ [13 <./figs/smb_vs_continuity_aletsch.png> <./figs/smb_vs_continuity_rhone.png
+>]
+<figs/sens_slidingco_3panel.pdf, id=123, 1076.56145pt x 450.47662pt>
+File: figs/sens_slidingco_3panel.pdf Graphic file (type pdf)
+<use figs/sens_slidingco_3panel.pdf>
+Package pdftex.def Info: figs/sens_slidingco_3panel.pdf  used on input line 152
+.
+(pdftex.def)             Requested size: 506.45905pt x 211.92337pt.
+ [14 <./figs/sens_slidingco_3panel.pdf>]
+<figs/velsurf_vs_stake_rmse.pdf, id=198, 495.16417pt x 419.06049pt>
+File: figs/velsurf_vs_stake_rmse.pdf Graphic file (type pdf)
+<use figs/velsurf_vs_stake_rmse.pdf>
+Package pdftex.def Info: figs/velsurf_vs_stake_rmse.pdf  used on input line 183
+.
+(pdftex.def)             Requested size: 303.87851pt x 257.17395pt.
+)
+(./Discussion.tex [15 <./figs/velsurf_vs_stake_rmse.pdf>] [16]) (./appendix.tex
+<figs/argentiere_da_panel.png, id=268, 686.565pt x 191.844pt>
+File: figs/argentiere_da_panel.png Graphic file (type png)
+<use figs/argentiere_da_panel.png>
+Package pdftex.def Info: figs/argentiere_da_panel.png  used on input line 33.
+(pdftex.def)             Requested size: 506.45905pt x 141.51738pt.
+[17]
+<figs/argentiere_smb_profile.png, id=272, 240.462pt x 289.4085pt>
+File: figs/argentiere_smb_profile.png Graphic file (type png)
+<use figs/argentiere_smb_profile.png>
+Package pdftex.def Info: figs/argentiere_smb_profile.png  used on input line 60
+.
+(pdftex.def)             Requested size: 278.55402pt x 335.28572pt.
+<figs/argentiere_thk_comparison.png, id=273, 686.8935pt x 197.757pt>
+File: figs/argentiere_thk_comparison.png Graphic file (type png)
+<use figs/argentiere_thk_comparison.png>
+Package pdftex.def Info: figs/argentiere_thk_comparison.png  used on input line
+ 71.
+(pdftex.def)             Requested size: 506.45905pt x 145.81284pt.
+) [18 <./figs/argentiere_da_panel.png>] [19 <./figs/argentiere_smb_profile.png>
+ <./figs/argentiere_thk_comparison.png>] (./main.bbl [20] [21])
 
 Package caption Warning: Unused \captionsetup[subfigure] on input line 42.
 See the caption package documentation for explanation.
@@ -698,41 +685,37 @@ See the caption package documentation for explanation.
 
 Package natbib Warning: There were undefined citations.
 
-[18] (./main.aux)
+[22] (./main.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2020/03/25>
  ***********
-
-
-LaTeX Warning: There were undefined references.
-
  ) 
 Here is how much of TeX's memory you used:
- 8751 strings out of 476106
- 140119 string characters out of 5793933
+ 8787 strings out of 476106
+ 141201 string characters out of 5793933
  1938975 words of memory out of 5000000
- 30551 multiletter control sequences out of 15000+600000
+ 30579 multiletter control sequences out of 15000+600000
  662403 words of font info for 124 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
- 80i,12n,105p,973b,462s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 80i,12n,105p,1437b,462s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb></usr/share/texmf/fonts/ty
 pe1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm/lmbx8.pfb></us
 r/share/texmf/fonts/type1/public/lm/lmex10.pfb></usr/share/texmf/fonts/type1/pu
 blic/lm/lmmi10.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi7.pfb></usr/shar
 e/texmf/fonts/type1/public/lm/lmmi8.pfb></usr/share/texmf/fonts/type1/public/lm
 /lmr10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/
-fonts/type1/public/lm/lmr6.pfb></usr/share/texmf/fonts/type1/public/lm/lmr7.pfb
-></usr/share/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1
-/public/lm/lmr9.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/sh
-are/texmf/fonts/type1/public/lm/lmri9.pfb></usr/share/texmf/fonts/type1/public/
-lm/lmss8.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/tex
-mf/fonts/type1/public/lm/lmsy7.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy
-8.pfb>
-Output written on main.pdf (18 pages, 2085170 bytes).
+fonts/type1/public/lm/lmr5.pfb></usr/share/texmf/fonts/type1/public/lm/lmr6.pfb
+></usr/share/texmf/fonts/type1/public/lm/lmr7.pfb></usr/share/texmf/fonts/type1
+/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lmr9.pfb></usr/shar
+e/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/l
+m/lmri9.pfb></usr/share/texmf/fonts/type1/public/lm/lmss8.pfb></usr/share/texmf
+/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy7
+.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb>
+Output written on main.pdf (22 pages, 1054482 bytes).
 PDF statistics:
- 186 PDF objects out of 1000 (max. 8388607)
- 108 compressed objects within 2 object streams
+ 386 PDF objects out of 1000 (max. 8388607)
+ 165 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 41 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 51 words of extra memory for PDF output out of 10000 (max. 10000000)
 

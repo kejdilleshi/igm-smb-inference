@@ -1,0 +1,160 @@
+# @package _global_
+#
+# GPR-constrained DA + SMB inference on Rhonegletscher (RGI60-11.01238).
+#
+# Differs from params_oggm_rhone.yaml: the data-assimilation stage now uses the
+# GlaThiDa GPR bedrock/thickness profile as a cost term and inverts BOTH thk and
+# slidingco (Argentière recipe, cf. params_argentiere.yaml):
+#   * thkobs  = data/input_RGI60_11.01238.nc built with
+#               `build_input_nc.py RGI60-11.01238 --n-years 14 --survey-year 2008`
+#               so only the 2008 GPR campaign (7 069 pts → 206 pixels)
+#               constrains the bed. The GlaThiDa record has essentially no 2007
+#               points (8); 2008-07-23 is the dense campaign nearest that epoch.
+#   * control_list = [thk, slidingco]   (was thk only)
+#   * cost_list    = [velsurf, icemask, thk]   (adds GPR thk misfit)
+#   * arrhenius stays FIXED at the IGM default 78.0 (not a control).
+#
+# Surface anchor unchanged: usurfobs ≈ 2006 (COP-DEM 30 − Hugonnet dhdt × 14).
+# SMB inference window unchanged: 2006 → 2020 vs GLAMOS B43-03 stakes.
+
+core:
+  hardware:
+    visible_gpus: [0]
+
+defaults:
+  - override /inputs:
+    - local
+  - override /processes:
+    - iceflow
+    - data_assimilation
+    - smb_inference
+
+inputs:
+  local:
+    filename: input_RGI60_11.01238.nc
+    crop:
+      xmin: -3053.0
+      xmax: 2907.0
+      ymin: 5157422.0
+      ymax: 5167672.0
+
+processes:
+  iceflow:
+    physics:
+      init_slidingco: 0.130
+      init_arrhenius: 78.0
+      sliding:
+        weertman:
+          u_ref: 100.0
+    emulator:
+      network:
+        architecture: SIADecompNet
+    numerics:
+      Nz: 2
+      basis_vertical: molho
+      basis_horizontal : q1
+      precision: single
+    method: unified
+    unified:
+      display:
+        print_cost: true
+        print_cost_freq: 50
+      inputs: [thk, usurf, slidingco, arrhenius, dX]
+      bcs: []
+      mapping: network
+      optimizer: lbfgs
+      lbfgs:
+        memory: 20
+      line_search: hager-zhang
+      nbit: -1
+      nbit_warmup: -1
+      nbit_init: -1
+      retrain_freq: 1000000
+      network:
+        # Keras-3 export — load under the `igm-pretrain` env (keras 3.12); the
+        # `igm` env (keras 2.15) cannot read it (slide_head_out 0-vars error).
+        pretrained_path: "/home/klleshi/Documents/igm-examples/aletsch/SIADecompNet_18x80_dil1-32/"
+        pretrained: true
+        print_summary: true
+        old_format: false
+
+  data_assimilation:
+    control_list:
+      - thk
+      - slidingco
+    cost_list:
+      - velsurf
+      - icemask
+      - thk
+    optimization:
+      nbitmax: 1000
+      step_size: 0.9
+      retrain_iceflow_model: true
+      fix_opti_normalization_issue: true
+      obstacle_constraint: ['reproject']
+      step_size_decay: 0.95
+      pertubate: True
+      patience: 200
+    fitting:
+      velsurfobs_std: 2.1
+      thkobs_std: 11.964981600016369
+    regularization:
+      thk: 328.0
+      slidingco: 10491954.33226791
+      smooth_anisotropy_factor: 1.0
+      convexity_weight: 0.0
+      to_regularize: thk
+    scaling:
+      thk: 1
+      slidingco: 0.023270677083837805
+    output:
+      plot2d_live: false
+      save_result_in_ncdf: geology-optimized.nc
+      save_iterat_in_ncdf: true
+      vars_to_save:
+        - usurf
+        - thk
+        - slidingco
+        - velbase_mag
+        - velsurf_mag
+        - velsurfobs_mag
+        - divflux
+        - icemask
+        - arrhenius
+
+  smb_inference:
+    t_start: 2006.0
+    ttot: 2020.0
+    dtmax: 1.0
+    cfl: 0.2
+    emulator:
+      from_state: true
+    observations:
+      state_variable: usurfinfer
+      smb_points_file: ${hydra:runtime.cwd}/data/rhone/SMB_rhone_2006-2020_rawstakes_utm32N.csv
+    inversion:
+      method: profile
+      dz: 200.0
+      smb_init_low: -10.0
+      smb_init_high: 1.0
+      # init_from_obs: true
+    optimization:
+      optimizer: lbfgs
+      nbitmax: 50
+      learning_rate: 0.1
+      regularisation: 0.01
+      early_stop_patience: 3
+      early_stop_threshold: 0.01
+      retrain_emulator_freq: 50000
+      early_retrain_iters: 1
+      lbfgs_memory: 10
+      lbfgs_tolerance: 1.0e-6
+      lbfgs_x_tolerance: 0.0
+      lbfgs_f_relative_tolerance: 0.0
+
+    output:
+      vis_freq: 5.0
+      visualize: false
+      outdir: ./smb_inference
+      plot_loss: true
+      save_results: true

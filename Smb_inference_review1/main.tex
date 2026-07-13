@@ -1,0 +1,63 @@
+    \documentclass[review,jog]{igs}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{color,soul}
+\usepackage{graphicx}
+\usepackage{bm}
+\usepackage{scalerel}
+\usepackage{booktabs}
+\usepackage{subcaption}
+
+\newcommand\dirbiblio{BIBLIO}
+\newcommand\dirlogo{images}
+
+    \jourvolume{0}
+\jourissue{0}
+\jourpubyear{2026}
+
+
+\begin{document} 
+
+	\title[Smb inference]{Surface mass balance inference based on a transient glacier evolution model inversion.}
+	
+
+	\author[LLeshi and others]{Kejdi LLeshi,$^1$ G. Jouvet$^{1}$, M. Kneib$^{2}$, F. Herman$^{1}$}
+		
+\affiliation{
+	$^1$Institute of Earth Surface Dynamics, University of Lausanne, Lausanne, Switzerland \\
+        $^2$Department of Geography, University of Zurich, Zurich, Switzerland} 
+ 
+ 
+	\begin{frontmatter}
+
+\maketitle
+
+% \begin{abstract}
+
+
+% \end{abstract}
+
+\end{frontmatter}
+ 
+\captionsetup[subfigure]{labelformat=simple,labelsep=space}
+\renewcommand\thesubfigure{\alph{subfigure}}
+
+ 
+ 
+
+
+% \newpage
+\input{abstract.tex}
+\input{introduction.tex}
+\input{Methodology.tex}
+\input{Results.tex}
+% \input{Discussion}
+%\input{acknowledgements.tex}
+\newpage
+\bibliography{\dirbiblio/biblio}							% Edit path to biblio
+\bibliographystyle{igs}
+% \input{appendix.tex}
+% \input{Figure_captions}
+% \input{Tables}
+
+\end{document}

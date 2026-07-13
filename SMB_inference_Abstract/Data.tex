@@ -1,0 +1,41 @@
+\subsection{Data}\label{sec:data}
+
+The pipeline requires, for each glacier, two surface DEMs bracketing the inversion
+window---whose difference is the geometry change to be explained---and a
+surface-velocity field for the data assimilation (Sect.~\ref{sec:da}). Ice-thickness
+soundings are used only where available, as an optional refinement
+(Appendix~\ref{app:gpr}). We selected three well-monitored Alpine glaciers spanning
+a wide range of size (Table~\ref{tab:data}). For Argentière the two DEMs are the
+2012 and 2021 Pléiades models of \citet{kneib2024}; for Great Aletsch (2009, 2017)
+and Rhône (2007, 2016) they are swisstopo geodetic models. Surface velocities are
+from satellite feature tracking \citep{millan2022} for all three.
+
+For validation we use in situ stake balances, kept strictly independent of the
+inversion. Rather than compare against every raw stake reading---noisy and
+irregularly sampled in space and time---we retain only locations with a continuous
+multi-year record, average each into a single balance value ($\pm$ interannual
+standard deviation), and evaluate the inferred profile against these averages: the
+stake RMSE (sRMSE) reported throughout is computed against them. This yields two
+such repeat cells on Aletsch and five on Rhône; on Argentière the denser GLACIOCLIM
+network provides the published 2012--2021 mean balance at each of 25 stakes.
+
+\begin{table}
+  \caption{Input and validation data for the three study glaciers. DEM epochs
+    bracket the inversion window; velocities drive the data assimilation; GPR
+    thickness is used only in the optional field inversion (Appendix~\ref{app:gpr}).
+    The stake column gives the number of continuous-record locations averaged for
+    the sRMSE.}
+  \label{tab:data}
+  \centering
+  \begin{tabular}{lccc}
+    \toprule
+     & Argentière & Great Aletsch & Rhône \\
+    \midrule
+    Window            & 2012--2021 & 2009--2017 & 2007--2016 \\
+    Surface DEMs      & Pléiades   & swisstopo  & swisstopo  \\
+    Velocity          & \citep{millan2022} & \citep{millan2022} & \citep{millan2022} \\
+    GPR thickness     & yes (app.) & --        & --         \\
+    Stake locations   & 25         & 2         & 5          \\
+    \bottomrule
+  \end{tabular}
+\end{table}
