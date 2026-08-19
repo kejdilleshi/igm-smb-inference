@@ -1,0 +1,206 @@
+\relax 
+\catcode`\'=\active
+\providecommand\babel@aux[2]{}
+\@nameuse{bbl@beforestart}
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{cogley2011}
+\citation{wgms2025}
+\citation{zemp2019}
+\citation{marzeion2012,radic2014,hugonnet2021}
+\citation{millan2022}
+\citation{hugonnet2021,beraud2023}
+\babel@aux{english}{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:intro}{{1}{1}{Introduction}{section.1}{}}
+\citation{marzeion2012,rounce2020,buri2023}
+\citation{rounce2020quantifying,schuster2023glacier}
+\citation{herrmann2025}
+\citation{glamos}
+\citation{cuffey2010}
+\citation{berthier2012,brun2018,kneib2022}
+\citation{bisset2020,miles2021,pelto2021,vantricht2021}
+\citation{zeller2023}
+\citation{bhushan2024}
+\citation{kneib2024}
+\citation{vantricht2021,bisset2020}
+\citation{kamb1986,enderlin2016}
+\citation{johannesson1989,zekollari2015}
+\citation{kneib2024}
+\citation{hartl2025}
+\citation{schmitt2026}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Existing approaches}{2}{subsection.1.1}\protected@file@percent }
+\newlabel{sec:sota}{{1.1}{2}{Existing approaches}{subsection.1.1}{}}
+\citation{brinkerhoff2025}
+\citation{kneib2024}
+\citation{hugonnet2021}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}This study}{3}{subsection.1.2}\protected@file@percent }
+\newlabel{sec:contribution}{{1.2}{3}{This study}{subsection.1.2}{}}
+\citation{jouvet2026igm}
+\citation{jouvet_cordonnier2023,rosier2026}
+\citation{jouvet2026igm}
+\citation{rosier2026}
+\citation{seroussi2011}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Methods}{4}{section.2}\protected@file@percent }
+\newlabel{sec:methods}{{2}{4}{Methods}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Overview}{4}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:overview}{{2.1}{4}{Overview}{subsection.2.1}{}}
+\newlabel{eq:masscons}{{1}{4}{Overview}{equation.2.1}{}}
+\citation{swisstopo}
+\citation{glamospoint}
+\citation{glacioclim}
+\citation{kneib2024}
+\citation{millan2022}
+\citation{dehecq2019}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Overview of the two-step SMB-inference workflow. \emph  {Step~1 (data assimilation):} the observed surface velocity and the end-epoch DEM are assimilated to recover the ice thickness $H_{t_2}$---and hence the bedrock---while the scalar flow parameters $(\tau _{\mathrm  {ref}}, A)$ are selected by an ensemble search that minimises the surface-velocity misfit. \emph  {Step~2 (SMB inference):} with the bedrock fixed, the start-epoch thickness $H_{t_1}$ is derived from the observed start DEM, and the transient model is integrated from the start DEM to the end DEM under a candidate elevation-dependent profile $smb(z)$; reverse-mode automatic differentiation (AD) through the whole forward run yields the profile whose modelled end-of-window geometry best reproduces the calibrated one. The ice-flow emulator (frozen weights) supplies the depth-averaged velocity at every step.}}{5}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:workflow}{{1}{5}{Overview of the two-step SMB-inference workflow. \emph {Step~1 (data assimilation):} the observed surface velocity and the end-epoch DEM are assimilated to recover the ice thickness $H_{t_2}$---and hence the bedrock---while the scalar flow parameters $(\tau _{\mathrm {ref}}, A)$ are selected by an ensemble search that minimises the surface-velocity misfit. \emph {Step~2 (SMB inference):} with the bedrock fixed, the start-epoch thickness $H_{t_1}$ is derived from the observed start DEM, and the transient model is integrated from the start DEM to the end DEM under a candidate elevation-dependent profile $smb(z)$; reverse-mode automatic differentiation (AD) through the whole forward run yields the profile whose modelled end-of-window geometry best reproduces the calibrated one. The ice-flow emulator (frozen weights) supplies the depth-averaged velocity at every step}{figure.caption.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Data}{5}{subsection.2.2}\protected@file@percent }
+\newlabel{sec:data}{{2.2}{5}{Data}{subsection.2.2}{}}
+\citation{millan2022}
+\citation{jouvet2023}
+\citation{rosier2026}
+\citation{millan2022}
+\citation{hansen1992}
+\citation{liunocedal1989}
+\citation{jouvet2023}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Input and validation data for the three study glaciers. DEM epochs bracket the inversion window; velocities, acquired near the end epoch $t_2$ for all three glaciers, drive the data assimilation there (Sect.~\ref {sec:da}). The stake column gives the number of continuous-record locations averaged for the stake RMSE.}}{6}{table.caption.2}\protected@file@percent }
+\newlabel{tab:data}{{1}{6}{Input and validation data for the three study glaciers. DEM epochs bracket the inversion window; velocities, acquired near the end epoch $t_2$ for all three glaciers, drive the data assimilation there (Sect.~\ref {sec:da}). The stake column gives the number of continuous-record locations averaged for the stake RMSE}{table.caption.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Ice-dynamics calibration via data assimilation}{6}{subsection.2.3}\protected@file@percent }
+\newlabel{sec:da}{{2.3}{6}{Ice-dynamics calibration via data assimilation}{subsection.2.3}{}}
+\newlabel{eq:da}{{2}{6}{Ice-dynamics calibration via data assimilation}{equation.2.2}{}}
+\citation{weertman1957}
+\citation{bergstra2011}
+\citation{akiba2019}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Selecting the smoothness weight of the data assimilation, shown for Great Aletsch. Each point is one assimilation, labelled by its Tikhonov weight: stronger smoothing lowers the thickness roughness (horizontal axis) but worsens the fit to the observed surface velocity (vertical axis). The corner of the curve (star) is the point beyond which further smoothing buys little reduction in roughness for a rapidly rising misfit, and fixes the weight used thereafter. The same sequence of weights and the same corner-detection rule are applied to all three glaciers, returning 100 (Argenti\`ere), 600 (Great Aletsch) and 1000 (Rh\^one).}}{7}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:dalcurve}{{2}{7}{Selecting the smoothness weight of the data assimilation, shown for Great Aletsch. Each point is one assimilation, labelled by its Tikhonov weight: stronger smoothing lowers the thickness roughness (horizontal axis) but worsens the fit to the observed surface velocity (vertical axis). The corner of the curve (star) is the point beyond which further smoothing buys little reduction in roughness for a rapidly rising misfit, and fixes the weight used thereafter. The same sequence of weights and the same corner-detection rule are applied to all three glaciers, returning 100 (Argenti\`ere), 600 (Great Aletsch) and 1000 (Rh\^one)}{figure.caption.3}{}}
+\newlabel{eq:bed}{{3}{7}{Ice-dynamics calibration via data assimilation}{equation.2.3}{}}
+\citation{miles2021,kneib2024}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}SMB inference by automatic differentiation}{8}{subsection.2.4}\protected@file@percent }
+\newlabel{sec:inference}{{2.4}{8}{SMB inference by automatic differentiation}{subsection.2.4}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.1}Initial condition and target.}{8}{subsubsection.2.4.1}\protected@file@percent }
+\newlabel{eq:hinit}{{4}{8}{Initial condition and target}{equation.2.4}{}}
+\newlabel{eq:hobs}{{5}{8}{Initial condition and target}{equation.2.5}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.2}Forward model.}{8}{subsubsection.2.4.2}\protected@file@percent }
+\newlabel{eq:euler}{{6}{8}{Forward model}{equation.2.6}{}}
+\newlabel{eq:cfl}{{7}{8}{Forward model}{equation.2.7}{}}
+\citation{liunocedal1989}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Mapping the one-dimensional profile to the two-dimensional source term, $smb(\mathbf  {x}) = smb(z_s(\mathbf  {x}))$, on Argentière. (a)~The inferred elevation profile $smb(z)$; (b)~the surface elevation $z_s(\mathbf  {x})$; and (c)~the resulting 2D $smb$ field, obtained by evaluating the profile at the surface elevation of every grid cell.}}{9}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:prof2field}{{3}{9}{Mapping the one-dimensional profile to the two-dimensional source term, $smb(\mathbf {x}) = smb(z_s(\mathbf {x}))$, on Argentière. (a)~The inferred elevation profile $smb(z)$; (b)~the surface elevation $z_s(\mathbf {x})$; and (c)~the resulting 2D $smb$ field, obtained by evaluating the profile at the surface elevation of every grid cell}{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.3}SMB parametrisation.}{9}{subsubsection.2.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.4.4}Inverse problem.}{9}{subsubsection.2.4.4}\protected@file@percent }
+\newlabel{eq:cost}{{8}{9}{Inverse problem}{equation.2.8}{}}
+\citation{baydin2018}
+\citation{abadi2016}
+\citation{griewank2000,chen2016}
+\citation{kneib2024}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Choice of the smoothness weight $\lambda $, shown for Rhône. Each point is one inversion, all sharing the same calibrated dynamical state so that only $\lambda $ varies. (a)~Stronger smoothing lowers the roughness of the profile at the cost of the geometry misfit. (b)~Stake RMSE against $\lambda $; the shaded band marks the range over which the recovered profile is effectively unchanged, and the fit degrades only at the extremes. The star is the adopted $\lambda = 0.05$.}}{10}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:lambda}{{4}{10}{Choice of the smoothness weight $\lambda $, shown for Rhône. Each point is one inversion, all sharing the same calibrated dynamical state so that only $\lambda $ varies. (a)~Stronger smoothing lowers the roughness of the profile at the cost of the geometry misfit. (b)~Stake RMSE against $\lambda $; the shaded band marks the range over which the recovered profile is effectively unchanged, and the fit degrades only at the extremes. The star is the adopted $\lambda = 0.05$}{figure.caption.5}{}}
+\citation{millan2022}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Calibrated data-assimilation state on Argentière at the calibration epoch $t_2$, for the adopted velocity-only run ($\tau _{\mathrm  {ref}}=0.199\,\mathrm  {MPa}$). (a)~Calibrated ice thickness $H_{t_2}$; (b)~observed surface speed $u_s^{\mathrm  {obs}}$ \citep  {millan2022}; (c)~modelled surface speed $u_s^{\mathrm  {mod}}$, in close agreement with the observations.}}{11}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:da-state}{{5}{11}{Calibrated data-assimilation state on Argentière at the calibration epoch $t_2$, for the adopted velocity-only run ($\tau _{\mathrm {ref}}=0.199\,\mathrm {MPa}$). (a)~Calibrated ice thickness $H_{t_2}$; (b)~observed surface speed $u_s^{\mathrm {obs}}$ \citep {millan2022}; (c)~modelled surface speed $u_s^{\mathrm {mod}}$, in close agreement with the observations}{figure.caption.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Results}{11}{section.3}\protected@file@percent }
+\newlabel{sec:results}{{3}{11}{Results}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Calibrated ice-dynamics states}{11}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:calib}{{3.1}{11}{Calibrated ice-dynamics states}{subsection.3.1}{}}
+\citation{kneib2024}
+\citation{kneib2024}
+\citation{kneib2024}
+\citation{kneib2024}
+\citation{kneib2024}
+\citation{kneib2024}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Validation of the inferred SMB against the GLACIOCLIM stake network on Argentière Glacier (main trunk + Améthystes tributary) over 2012--2021. The three baselines are the modelling approaches of \citet  {kneib2024}, evaluated against the same stakes; all three use ice-thickness data, whereas our result uses surface velocity only.}}{12}{table.caption.7}\protected@file@percent }
+\newlabel{tab:rmse}{{2}{12}{Validation of the inferred SMB against the GLACIOCLIM stake network on Argentière Glacier (main trunk + Améthystes tributary) over 2012--2021. The three baselines are the modelling approaches of \citet {kneib2024}, evaluated against the same stakes; all three use ice-thickness data, whereas our result uses surface velocity only}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Inferred SMB and validation}{12}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:inferred}{{3.2}{12}{Inferred SMB and validation}{subsection.3.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Inferred SMB profile (black) for (a)~Argentière, (b)~Great Aletsch and (c)~Rhône, compared against in situ stake measurements and against the continuity estimate $\mathrm  {d}h/\mathrm  {d}t + \nabla \!\cdot \mathbf  {q}$ (dashed) obtained with the \emph  {stationary} data-assimilation flux divergence. Green diamonds are the continuous-record stake averages ($\pm $ interannual standard deviation), the validation targets (faint grey dots on Aletsch and Rhône are the raw single-year readings). The inferred profile tracks the averages across the whole elevation range ($\mathrm  {RMSE}=0.40$, $0.52$ and $0.60\,\mathrm  {m\,w.e.\,yr^{-1}}$), whereas the stationary-flux estimate departs strongly in the ablation zone ($0.98$, $1.13$ and $1.53$).}}{13}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:smb-continuity}{{6}{13}{Inferred SMB profile (black) for (a)~Argentière, (b)~Great Aletsch and (c)~Rhône, compared against in situ stake measurements and against the continuity estimate $\mathrm {d}h/\mathrm {d}t + \nabla \!\cdot \mathbf {q}$ (dashed) obtained with the \emph {stationary} data-assimilation flux divergence. Green diamonds are the continuous-record stake averages ($\pm $ interannual standard deviation), the validation targets (faint grey dots on Aletsch and Rhône are the raw single-year readings). The inferred profile tracks the averages across the whole elevation range ($\mathrm {RMSE}=0.40$, $0.52$ and $0.60\,\mathrm {m\,w.e.\,yr^{-1}}$), whereas the stationary-flux estimate departs strongly in the ablation zone ($0.98$, $1.13$ and $1.53$)}{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Sensitivity to the basal-motion parameter}{13}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:sensitivity}{{3.3}{13}{Sensitivity to the basal-motion parameter}{subsection.3.3}{}}
+\citation{kneib2024}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Inferred SMB profiles across a range of the basal-motion parameter $\tau _{\mathrm  {ref}}$ for (a)~Argentière, (b)~Great Aletsch and (c)~Rhône; colour encodes $\tau _{\mathrm  {ref}}$ and the adopted profile is drawn bold. Within the low-velocity-misfit basin the profiles coincide in the accumulation area and diverge only at the ablation tongue, so the residual uncertainty in $\tau _{\mathrm  {ref}}$ translates into an equilibrium-line-altitude band (shaded) rather than a whole-profile bias; the runs the velocity misfit rejects (dashed) depart most strongly.}}{14}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:sens}{{7}{14}{Inferred SMB profiles across a range of the basal-motion parameter $\tau _{\mathrm {ref}}$ for (a)~Argentière, (b)~Great Aletsch and (c)~Rhône; colour encodes $\tau _{\mathrm {ref}}$ and the adopted profile is drawn bold. Within the low-velocity-misfit basin the profiles coincide in the accumulation area and diverge only at the ablation tongue, so the residual uncertainty in $\tau _{\mathrm {ref}}$ translates into an equilibrium-line-altitude band (shaded) rather than a whole-profile bias; the runs the velocity misfit rejects (dashed) depart most strongly}{figure.caption.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Data-assimilation surface-velocity misfit (\emph  {velsurf} RMSE) against the independent stake RMSE across the $\tau _{\mathrm  {ref}}$ sweep, shown separately for each glacier. Higher velocity misfit is associated with higher stake error on all three (Pearson $r=0.99$, $0.72$ and $0.81$; Spearman $\rho =0.83$, $0.38$ and $0.71$, for Argentière, Aletsch and Rhône respectively), so the velocity misfit---the only selector available without stakes---carries usable information about the accuracy of the inferred SMB.}}{15}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:corr}{{8}{15}{Data-assimilation surface-velocity misfit (\emph {velsurf} RMSE) against the independent stake RMSE across the $\tau _{\mathrm {ref}}$ sweep, shown separately for each glacier. Higher velocity misfit is associated with higher stake error on all three (Pearson $r=0.99$, $0.72$ and $0.81$; Spearman $\rho =0.83$, $0.38$ and $0.71$, for Argentière, Aletsch and Rhône respectively), so the velocity misfit---the only selector available without stakes---carries usable information about the accuracy of the inferred SMB}{figure.caption.10}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Discussion}{15}{section.4}\protected@file@percent }
+\newlabel{sec:discussion}{{4}{15}{Discussion}{section.4}{}}
+\citation{miles2021}
+\citation{kneib2024}
+\citation{kneib2024}
+\citation{kneib2024}
+\citation{millan2022}
+\citation{hugonnet2021}
+\citation{millan2022}
+\citation{kneib2024}
+\citation{hugonnet2021}
+\citation{hugonnet2021}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusions}{17}{section.5}\protected@file@percent }
+\newlabel{sec:conclusions}{{5}{17}{Conclusions}{section.5}{}}
+\@writefile{toc}{\contentsline {section}{Appendix A: Appendix}{17}{appendix.A}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{Appendix A1: Applicability to near-global elevation-change data}{17}{subsection.A.1}\protected@file@percent }
+\newlabel{app:hugonnet}{{A1}{17}{Conclusions}{subsection.A.1}{}}
+\citation{hugonnet2021}
+\citation{seroussi2011}
+\@writefile{lot}{\contentsline {table}{\numberline {A1}{\ignorespaces Sensitivity of the Rhône inversion to the basal-motion parameter $\tau _{\mathrm  {ref}}$ (at $A=66.8\,\mathrm  {MPa^{-3}\,yr^{-1}}$, the main-text ensemble-search value), comparing the Hugonnet-anchored experiment (Hugonnet-implied 2007 surface) against the dedicated-DEM one (surveyed 2007 surface) at matching $\tau _{\mathrm  {ref}}$. The two experiments share an identical DA state (2016 anchor, bed, ensemble search) and are validated against the \emph  {same} $n=5$ 2007--2016 stake set, so the two stake-RMSE columns isolate the effect of the 2007 DEM source alone. \emph  {velsurf} is identical between the two experiments to the precision shown, since the DA does not depend on the 2007 surface; ELA is from the Hugonnet experiment (the dedicated-DEM values are $60$--$90\,\mathrm  {m}$ lower throughout, Fig.~\ref {fig:hugonnet}). Mean improvement: 0.11 m $ w.e. yr^{-1}$, or $~9.8\%$ averaged per-row}}{18}{table.caption.11}\protected@file@percent }
+\newlabel{tab:hugonnet}{{A1}{18}{Sensitivity of the Rhône inversion to the basal-motion parameter $\tau _{\mathrm {ref}}$ (at $A=66.8\,\mathrm {MPa^{-3}\,yr^{-1}}$, the main-text ensemble-search value), comparing the Hugonnet-anchored experiment (Hugonnet-implied 2007 surface) against the dedicated-DEM one (surveyed 2007 surface) at matching $\tau _{\mathrm {ref}}$. The two experiments share an identical DA state (2016 anchor, bed, ensemble search) and are validated against the \emph {same} $n=5$ 2007--2016 stake set, so the two stake-RMSE columns isolate the effect of the 2007 DEM source alone. \emph {velsurf} is identical between the two experiments to the precision shown, since the DA does not depend on the 2007 surface; ELA is from the Hugonnet experiment (the dedicated-DEM values are $60$--$90\,\mathrm {m}$ lower throughout, Fig.~\ref {fig:hugonnet}). Mean improvement: 0.11 m $ w.e. yr^{-1}$, or $~9.8\%$ averaged per-row}{table.caption.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {A1}{\ignorespaces Sliding-coefficient sensitivity of the Rhône inversion for two 2007--2016 experiments sharing an identical DA state (Sect.~\ref {sec:da}, anchored on the real 2016 DEM): (a)~the surveyed swisstopo 2007 DEM used in the main text and (b)~a 2007 surface implied by applying the \citet  {hugonnet2021} $\mathrm  {d}h/\mathrm  {d}t$ product backward from the same 2016 DEM. Each panel shows the inferred SMB profile across a range of $\tau _{\mathrm  {ref}}$ (colour; the profile at the main text's adopted $\tau _{\mathrm  {ref}}=0.132$ bold with its stake RMSE, and runs with velsurf misfit $>1.5\times $ the panel's best rejected, dashed), the equilibrium-line-altitude band shaded over the retained runs, all validated against the \emph  {same} $n=5$ 2007--2016 stake averages (green diamonds). Both experiments recover the elevation structure, but the Hugonnet-based fan sits higher and fits the stakes less well in the accumulation area, giving a larger stake RMSE at the adopted $\tau _{\mathrm  {ref}}$ ($0.77$ vs $0.60\,\mathrm  {m\,w.e.\,yr^{-1}}$).}}{19}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:hugonnet}{{A1}{19}{Sliding-coefficient sensitivity of the Rhône inversion for two 2007--2016 experiments sharing an identical DA state (Sect.~\ref {sec:da}, anchored on the real 2016 DEM): (a)~the surveyed swisstopo 2007 DEM used in the main text and (b)~a 2007 surface implied by applying the \citet {hugonnet2021} $\mathrm {d}h/\mathrm {d}t$ product backward from the same 2016 DEM. Each panel shows the inferred SMB profile across a range of $\tau _{\mathrm {ref}}$ (colour; the profile at the main text's adopted $\tau _{\mathrm {ref}}=0.132$ bold with its stake RMSE, and runs with velsurf misfit $>1.5\times $ the panel's best rejected, dashed), the equilibrium-line-altitude band shaded over the retained runs, all validated against the \emph {same} $n=5$ 2007--2016 stake averages (green diamonds). Both experiments recover the elevation structure, but the Hugonnet-based fan sits higher and fits the stakes less well in the accumulation area, giving a larger stake RMSE at the adopted $\tau _{\mathrm {ref}}$ ($0.77$ vs $0.60\,\mathrm {m\,w.e.\,yr^{-1}}$)}{figure.caption.12}{}}
+\bibstyle{copernicus}
+\bibdata{BIBLIO/biblio}
+\@writefile{lof}{\contentsline {figure}{\numberline {A2}{\ignorespaces Mechanical-equilibrium check on Argentière: on-ice thickness drift after integrating one year forward under $smb\equiv 0$, starting from (a) the derived start-epoch state $H_{t_1}$ and (b) the DA-calibrated state $H_{t_2}$; (c) the two drift distributions overlaid, with their on-ice RMS.}}{20}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:shock}{{A2}{20}{Mechanical-equilibrium check on Argentière: on-ice thickness drift after integrating one year forward under $smb\equiv 0$, starting from (a) the derived start-epoch state $H_{t_1}$ and (b) the DA-calibrated state $H_{t_2}$; (c) the two drift distributions overlaid, with their on-ice RMS}{figure.caption.13}{}}
+\@writefile{toc}{\contentsline {subsection}{Appendix A2: Mechanical equilibrium of the calibrated dynamical state}{20}{subsection.A.2}\protected@file@percent }
+\newlabel{app:equilibrium}{{A2}{20}{Conclusions}{subsection.A.2}{}}
+\bibcite{abadi2016}{{1}{2016}{{Abadi et~al.}}{{Abadi, Barham, Chen, Chen, Davis, Dean, Devin, Ghemawat, Irving, Isard, Kudlur, Levenberg, Monga, Moore, Murray, Steiner, Tucker, Vasudevan, Warden, Wicke, Yu, and Zheng}}}
+\bibcite{akiba2019}{{2}{2019}{{Akiba et~al.}}{{Akiba, Sano, Yanase, Ohta, and Koyama}}}
+\bibcite{baydin2018}{{3}{2018}{{Baydin et~al.}}{{Baydin, Pearlmutter, Radul, and Siskind}}}
+\bibcite{beraud2023}{{4}{2022}{{Beraud et~al.}}{{Beraud, Cusicanqui, Rabatel, Brun, Vincent, and Six}}}
+\bibcite{bergstra2011}{{5}{2011}{{Bergstra et~al.}}{{Bergstra, Bardenet, Bengio, and K\'egl}}}
+\bibcite{berthier2012}{{6}{2012}{{Berthier and Vincent}}{{}}}
+\bibcite{bhushan2024}{{7}{2024}{{Bhushan et~al.}}{{Bhushan, Shean, Hu, Guillet, and Rounce}}}
+\bibcite{bisset2020}{{8}{2020}{{Bisset et~al.}}{{Bisset, Dehecq, Goldberg, Huss, Bingham, and Gourmelen}}}
+\bibcite{brinkerhoff2025}{{9}{2025}{{Brinkerhoff et~al.}}{{Brinkerhoff, Tober, Daniel, Devaux-Chupin, Christoffersen, Holt, Larsen, Fahnestock, Loso, Timm, Mitchell, and Truffer}}}
+\bibcite{brun2018}{{10}{2018}{{Brun et~al.}}{{Brun, Wagnon, Berthier, Shea, Immerzeel, Kraaijenbrink, Vincent, Reverchon, Shrestha, and Arnaud}}}
+\bibcite{buri2023}{{11}{2023}{{Buri et~al.}}{{Buri, Fatichi, Shaw, Miles, McCarthy, Fyffe, Fugger, Ren, Kneib, Jouberton, Steiner, Fujita, and Pellicciotti}}}
+\bibcite{chen2016}{{12}{2016}{{Chen et~al.}}{{Chen, Xu, Zhang, and Guestrin}}}
+\bibcite{cogley2011}{{13}{2011}{{Cogley et~al.}}{{Cogley, Hock, Rasmussen, Arendt, Bauder, Braithwaite, Jansson, Kaser, M\"oller, Nicholson, and Zemp}}}
+\bibcite{cuffey2010}{{14}{2010}{{Cuffey and Paterson}}{{}}}
+\bibcite{dehecq2019}{{15}{2019}{{Dehecq et~al.}}{{Dehecq, Gourmelen, Gardner, Brun, Goldberg, Nienow, Berthier, Vincent, Wagnon, and Trouv\'e}}}
+\bibcite{enderlin2016}{{16}{2016}{{Enderlin et~al.}}{{Enderlin, Hamilton, O'Neel, Bartholomaus, Morlighem, and Holt}}}
+\bibcite{glacioclim}{{17}{2026}{{GLACIOCLIM}}{{}}}
+\bibcite{glamos}{{18}{2021}{{GLAMOS}}{{}}}
+\bibcite{glamospoint}{{19}{2023}{{GLAMOS}}{{}}}
+\bibcite{griewank2000}{{20}{2000}{{Griewank and Walther}}{{}}}
+\bibcite{hansen1992}{{21}{1992}{{Hansen}}{{}}}
+\bibcite{hartl2025}{{22}{2025}{{Hartl et~al.}}{{Hartl, Schmitt, Schuster, Helfricht, Abermann, and Maussion}}}
+\bibcite{herrmann2025}{{23}{2025}{{Herrmann et~al.}}{{Herrmann, Prasad, Z{\"o}ller, Groos, Cook, Sommer, and F{\"u}rst}}}
+\bibcite{hugonnet2021}{{24}{2021}{{Hugonnet et~al.}}{{Hugonnet, McNabb, Berthier, Menounos, Nuth, Girod, Farinotti, Huss, Dussaillant, Brun, and K\"a\"ab}}}
+\bibcite{johannesson1989}{{25}{1989}{{J\'ohannesson et~al.}}{{J\'ohannesson, Raymond, and Waddington}}}
+\bibcite{jouvet2023}{{26}{2023}{{Jouvet}}{{}}}
+\bibcite{jouvet_cordonnier2023}{{27}{2023}{{Jouvet and Cordonnier}}{{}}}
+\bibcite{jouvet2026igm}{{28}{2026}{{Jouvet et~al.}}{{Jouvet, Finley, Gregov, and Rosier}}}
+\bibcite{kamb1986}{{29}{1986}{{Kamb and Echelmeyer}}{{}}}
+\bibcite{kneib2022}{{30}{2022}{{Kneib et~al.}}{{Kneib, Miles, Buri, Fugger, McCarthy, Shaw, Chuanxi, Truffer, Westoby, Yang, and Pellicciotti}}}
+\bibcite{kneib2024}{{31}{2024}{{Kneib et~al.}}{{Kneib, Dehecq, Gilbert, Basset, Miles, Jouvet, Jourdain, Ducasse, Beraud, Rabatel et~al.}}}
+\bibcite{liunocedal1989}{{32}{1989}{{Liu and Nocedal}}{{}}}
+\bibcite{marzeion2012}{{33}{2012}{{Marzeion et~al.}}{{Marzeion, Jarosch, and Hofer}}}
+\bibcite{miles2021}{{34}{2021}{{Miles et~al.}}{{Miles, McCarthy, Dehecq, Kneib, Fugger, and Pellicciotti}}}
+\bibcite{millan2022}{{35}{2022}{{Millan et~al.}}{{Millan, Mouginot, Rabatel, and Morlighem}}}
+\bibcite{pelto2021}{{36}{2021}{{Pelto and Menounos}}{{}}}
+\bibcite{radic2014}{{37}{2014}{{Radi\'c et~al.}}{{Radi\'c, Bliss, Beedlow, Hock, Miles, and Cogley}}}
+\bibcite{rosier2026}{{38}{2026}{{Rosier and Jouvet}}{{}}}
+\bibcite{rounce2020}{{39}{2020{a}}{{Rounce et~al.}}{{Rounce, Hock, and Shean}}}
+\bibcite{rounce2020quantifying}{{40}{2020{b}}{{Rounce et~al.}}{{Rounce, Khurana, Short, Hock, Shean, and Brinkerhoff}}}
+\bibcite{schmitt2026}{{41}{2026}{{Schmitt et~al.}}{{Schmitt, Maussion, Goldberg, and Gregor}}}
+\bibcite{schuster2023glacier}{{42}{2023}{{Schuster et~al.}}{{Schuster, Rounce, and Maussion}}}
+\bibcite{seroussi2011}{{43}{2011}{{Seroussi et~al.}}{{Seroussi, Morlighem, Rignot, Larour, Aubry, Ben~Dhia, and Kristensen}}}
+\bibcite{swisstopo}{{44}{2026}{{swisstopo}}{{}}}
+\bibcite{vantricht2021}{{45}{2021}{{Van~Tricht et~al.}}{{Van~Tricht, Huybrechts, Van~Breedam, Vanhulle, Van~Oost, and Zekollari}}}
+\bibcite{weertman1957}{{46}{1957}{{Weertman}}{{}}}
+\bibcite{wgms2025}{{47}{2025}{{WGMS}}{{}}}
+\bibcite{zekollari2015}{{48}{2015}{{Zekollari and Huybrechts}}{{}}}
+\bibcite{zeller2023}{{49}{2023}{{Zeller et~al.}}{{Zeller, McGrath, Sass, O'Neel, McNeil, and Baker}}}
+\bibcite{zemp2019}{{50}{2019}{{Zemp et~al.}}{{Zemp, Huss, Thibert, Eckert, McNabb, Huber, Barandun, Machguth, Nussbaumer, G\"artner-Roer, Thomson, Paul, Maussion, Kutuzov, and Cogley}}}
+\newlabel{LastPage}{{}{24}{}{}{}}
+\gdef \@abspage@last{24}

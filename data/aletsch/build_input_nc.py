@@ -24,6 +24,7 @@ the original IGM Aletsch tutorial, considered more accurate than the
 Hugonnet-derived 2020 surface for this glacier.
 """
 
+import argparse
 import os
 import shutil
 import numpy as np
@@ -57,6 +58,16 @@ def fill_nan_nearest(arr):
 
 
 def main():
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--da-epoch", choices=["start", "end"], default="end",
+                    help="surface the DA inverts against: 'end' (default — the "
+                         "epoch the observed velocities sample) or 'start' (the "
+                         "original setup, kept for reproducing old runs)")
+    args = ap.parse_args()
+    da_epoch = args.da_epoch
+    DA_SURF = START_SURF if da_epoch == "start" else END_SURF
+
     for p in (SRC_INPUT, SRC_PAST):
         if not os.path.exists(p):
             raise FileNotFoundError(p)
@@ -79,19 +90,25 @@ def main():
         surf_start = to_nan(ds_past.variables[START_SURF][:])
         surf_end   = to_nan(ds_past.variables[END_SURF][:])
 
-    # Back-correct thickness to the start epoch under fixed-bed assumption:
-    # thk_start = thk_modern + (surf_start - usurf_modern), clipped >= 0.
-    # surf_start/usurf_modern from past_surf agree off-glacier (same terrain),
+    # Back-correct thickness to the DA epoch under fixed-bed assumption:
+    # thk_da = thk_modern + (surf_da - usurf_modern), clipped >= 0.
+    # surf_da/usurf_modern from past_surf agree off-glacier (same terrain),
     # so off-glacier thk stays 0.
-    dh = surf_start - usurf_modern
+    surf_da = surf_start if da_epoch == "start" else surf_end
+    dh = surf_da - usurf_modern
     thkinit = np.clip(thk_modern + dh, 0.0, None).astype(np.float32)
-    print(f"thkinit: dh range [{np.nanmin(dh):.1f}, {np.nanmax(dh):.1f}] m, "
+    print(f"thkinit({DA_SURF}): dh range [{np.nanmin(dh):.1f}, {np.nanmax(dh):.1f}] m, "
           f"on-glacier mean thickness {thkinit[icemask > 0.5].mean():.1f} m")
 
-    # usurfobs = raw start DEM; usurf = NaN-filled clean copy for the emulator.
-    usurfobs = surf_start.astype(np.float32)
+    # usurfobs = raw DA-epoch DEM; usurf = NaN-filled clean copy for the emulator.
+    usurfobs = surf_da.astype(np.float32)
     usurf    = fill_nan_nearest(usurfobs)
     assert not np.isnan(usurf).any(), "usurf (emulator input) must not contain NaN"
+
+    # Start-of-period surface, NaN-filled. Only needed when the DA epoch is the
+    # END of the period: the SMB forward run is re-anchored to this surface on
+    # the DA-fixed bed (smb_inference.initial_state.usurf_variable=usurfstart).
+    usurfstart = fill_nan_nearest(surf_start.astype(np.float32))
 
     # usurfinfer = end-of-period DEM (NaNs preserved; the SMB-inference cost
     # gates on ~is_nan(usurfinfer) just like Argentière).
@@ -134,22 +151,26 @@ def main():
             v.standard_name = name
             v[:, :] = data
 
-        add("usurf",       usurf,      "m",        f"Surface Topography (NaN-filled, {START_SURF}, emulator input)")
-        add("usurfobs",    usurfobs,   "m",        f"Observed Surface Topography (raw {START_SURF}, NaNs preserved)")
+        add("usurf",       usurf,      "m",        f"Surface Topography (NaN-filled, {DA_SURF}, emulator input)")
+        add("usurfobs",    usurfobs,   "m",        f"Observed Surface Topography (raw {DA_SURF}, NaNs preserved, DA reference)")
         add("usurfinfer",  usurfinfer, "m",        f"End-of-period Surface Topography ({END_SURF}, SMB-inference target)")
         add("dhdt",        dhdt,       "m/y",      f"Geodetic dh/dt ({END_SURF}−{START_SURF})/{int(period_years)} yr (swisstopo DEMs)")
-        add("thkinit",     thkinit,    "m",        f"Ice Thickness prior at {START_SURF} epoch (modern thk + ΔDEM)")
+        add("thkinit",     thkinit,    "m",        f"Ice Thickness prior at {DA_SURF} epoch (modern thk + ΔDEM)")
         add("thk",         thkinit,    "m",        f"Ice Thickness (DA initial state, copy of thkinit)")
         add("thkobs",      thkobs,     "m",        "Ice Thickness Observations (GPR, from igm-examples/aletsch)")
         add("uvelsurfobs", vx,         "m/y",      "x surface velocity of ice")
         add("vvelsurfobs", vy,         "m/y",      "y surface velocity of ice")
         add("icemask",     icemask,    "no unit",  "Ice mask")
         add("icemaskobs",  icemaskobs, "no unit",  "Observation validity mask (icemask AND obs non-NaN)")
+        if da_epoch == "end":
+            add("usurfstart", usurfstart, "m",
+                f"Start-of-period Surface Topography (NaN-filled, {START_SURF}); "
+                f"SMB forward-run start geometry on the DA bed")
 
         ds.title  = "Grosser Aletschgletscher Input Data — 100 m resolution"
         ds.source = f"Built from {SRC_INPUT} and {SRC_PAST}"
         ds.history = (f"Created with build_input_nc.py; "
-                      f"start={START_SURF}, end={END_SURF}")
+                      f"start={START_SURF}, end={END_SURF}, da_epoch={DA_SURF}")
         ds.crs = "EPSG:32632 (UTM zone 32N / WGS84)"
 
     print("Done.")

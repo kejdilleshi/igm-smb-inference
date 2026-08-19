@@ -46,7 +46,12 @@ sys.path.insert(0, os.path.join(PROJECT_DIR, "user", "code", "processes", "smb_i
 
 from run_pipeline import GLACIERS, FIXED_SMB_REG, run  # noqa: E402
 
-INSITU = ["aletsch_insitu", "rhone_insitu", "argentiere"]
+# Glaciers the sensitivity supports. "rhone_hugonnet2007" is the
+# Hugonnet-anchored variant (same DA epoch/bed/window as rhone_insitu,
+# 2007-2016; only the 2007 start surface is Hugonnet-implied rather than
+# surveyed) — used to quantify Hugonnet-vs-insitu performance (Appendix A2).
+# "rhone" (DA-at-t1) is superseded by rhone_insitu.
+INSITU = ["aletsch_insitu", "rhone_insitu", "argentiere", "rhone", "rhone_hugonnet2007"]
 
 
 # ── slidingco selection ───────────────────────────────────────────────────────
@@ -133,12 +138,21 @@ def final_da_velsurf(run_dir):
     cp = os.path.join(run_dir, "costs.dat")
     if not os.path.exists(cp):
         return float("nan")
-    hdr = open(cp).readline().split()
+    with open(cp) as f:
+        lines = [ln for ln in (l.strip() for l in f) if ln]
+    if not lines:
+        return float("nan")
+    hdr = lines[0].split()
     if "velsurf" not in hdr:
         return float("nan")
-    data = np.loadtxt(cp, skiprows=1)
-    last = data[-1] if data.ndim > 1 else data
-    return float(last[hdr.index("velsurf")])
+    # IGM APPENDS to costs.dat, so re-running the same hydra.run.dir leaves a
+    # second header partway down the file and np.loadtxt dies on it. Take the
+    # block after the LAST header — the most recent run is the live one.
+    starts = [i for i, ln in enumerate(lines) if ln.split()[0] == hdr[0]]
+    body = lines[starts[-1] + 1:]
+    if not body:
+        return float("nan")
+    return float(body[-1].split()[hdr.index("velsurf")])
 
 
 def overlay(glacier, runs, rho_ice):

@@ -10,6 +10,16 @@ emulator:
   model_path: iceflow-model  # Path to emulator artifact directory
   Nz: 4                     # Number of vertical levels (only used when loading from disk)
 
+# Forward-run start geometry
+initial_state:
+  # Empty (default) -> the forward run starts from state.thk, i.e. the geometry
+  # the data assimilation just produced.
+  # Set to a state/NetCDF variable name (e.g. usurfstart) to re-anchor the run
+  # to that surface on the DA-fixed bed: H_init = max(<var> - topg, 0) * icemask.
+  # Use this when the DA is performed against the END-of-period surface (the
+  # epoch the observed velocities sample) but the SMB run must start at t_start.
+  usurf_variable: ''
+
 # Observation data
 observations:
   geology_file: ''           # Path to NetCDF with observation surfaces (e.g., geology.nc). If empty, uses state variable.

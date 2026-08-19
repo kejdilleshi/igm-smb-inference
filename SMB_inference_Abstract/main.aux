@@ -1,137 +1,83 @@
 \relax 
-\citation{cogley2011}
-\citation{radic2014,marzeion2012}
-\citation{hugonnet2021,zemp2019}
-\citation{millan2022}
-\citation{farinotti2019,millan2022}
-\citation{hugonnet2021,beraud2023}
-\citation{marzeion2012,rounce2020}
-\citation{glamos}
-\citation{cuffey2010}
-\citation{berthier2012,brun2018}
-\citation{bisset2020,miles2021,pelto2021,vantricht2021,kneib2022}
-\citation{kneib2024}
-\@writefile{toc}{\contentsline {section}{Introduction}{2}{}\protected@file@percent }
-\newlabel{sec:intro}{{}{2}{Introduction}{}{}}
-\@writefile{toc}{\contentsline {subsection}{Existing approaches}{2}{}\protected@file@percent }
-\newlabel{sec:sota}{{}{2}{Existing approaches}{}{}}
-\citation{vantricht2021,bisset2020}
-\citation{johannesson1989,zekollari2015}
-\citation{kneib2024}
-\citation{kneib2024}
-\citation{hugonnet2021}
-\@writefile{toc}{\contentsline {subsection}{This study}{3}{}\protected@file@percent }
-\newlabel{sec:contribution}{{}{3}{This study}{}{}}
-\citation{jouvet2023,jouvet_cordonnier2023}
-\citation{jouvet_cordonnier2023}
-\@writefile{toc}{\contentsline {section}{Methods}{4}{}\protected@file@percent }
-\newlabel{sec:methods}{{}{4}{Methods}{}{}}
-\@writefile{toc}{\contentsline {subsection}{Overview}{4}{}\protected@file@percent }
-\newlabel{sec:overview}{{}{4}{Overview}{}{}}
-\newlabel{eq:masscons}{{1}{4}{Overview}{}{}}
+\citation{jouvet2026igm}
+\citation{jouvet_cordonnier2023,rosier2026}
+\citation{jouvet2026igm}
+\citation{rosier2026}
+\citation{seroussi2011}
+\@writefile{toc}{\contentsline {section}{Methods}{2}{}\protected@file@percent }
+\newlabel{sec:methods}{{}{2}{Methods}{}{}}
+\@writefile{toc}{\contentsline {subsection}{Overview}{2}{}\protected@file@percent }
+\newlabel{sec:overview}{{}{2}{Overview}{}{}}
+\newlabel{eq:masscons}{{1}{2}{Overview}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Overview of the two-step SMB-inference workflow. \emph  {Step~1 (data assimilation):} the observed surface velocity and the start-epoch DEM are assimilated to recover the ice thickness $H_{t_1}$---and hence the bedrock---while the scalar flow parameters $(\tau _{\mathrm  {ref}}, A)$ are selected by an ensemble search that minimises the surface-velocity misfit. \emph  {Step~2 (SMB inference):} with the calibrated state held fixed, the transient model is integrated from the start DEM to the end DEM under a candidate elevation-dependent profile $smb(z)$; reverse-mode automatic differentiation through the whole forward run yields the profile whose modelled end-of-window geometry best reproduces the observed one. The ice-flow emulator (frozen weights) supplies the depth-averaged velocity at every step.}}{3}{}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:workflow}{{1}{3}{Overview}{}{}}
 \citation{kneib2024}
 \citation{millan2022}
+\citation{dehecq2019}
 \citation{millan2022}
-\citation{millan2022}
-\citation{millan2022}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Input and validation data for the three study glaciers. DEM epochs bracket the inversion window and velocities drive the data assimilation. The stake column gives the number of continuous-record locations averaged for the sRMSE.}}{4}{}\protected@file@percent }
+\newlabel{tab:data}{{1}{4}{Data}{}{}}
+\@writefile{toc}{\contentsline {subsection}{Data}{4}{}\protected@file@percent }
+\newlabel{sec:data}{{}{4}{Data}{}{}}
 \citation{jouvet2023}
+\citation{rosier2026}
+\citation{millan2022}
+\citation{hansen1992}
 \citation{liunocedal1989}
 \citation{jouvet2023}
-\@writefile{toc}{\contentsline {subsection}{Data}{5}{}\protected@file@percent }
-\newlabel{sec:data}{{}{5}{Data}{}{}}
+\citation{weertman1957}
+\citation{bergstra2011}
+\citation{akiba2019}
 \@writefile{toc}{\contentsline {subsection}{Ice-dynamics calibration via data assimilation}{5}{}\protected@file@percent }
 \newlabel{sec:da}{{}{5}{Ice-dynamics calibration via data assimilation}{}{}}
 \newlabel{eq:da}{{2}{5}{Ice-dynamics calibration via data assimilation}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Overview of the two-step SMB-inference workflow. \emph  {Step~1 (data assimilation):} the observed surface velocity and the start-epoch DEM are assimilated to recover the ice thickness $H_{t_1}$---and hence the bedrock---while the scalar flow parameters $(\tau _{\mathrm  {ref}}, A)$ are selected by an ensemble search that minimises the surface-velocity misfit. \emph  {Step~2 (SMB inference):} with the calibrated state held fixed, the transient model is integrated from the start DEM to the end DEM under a candidate elevation-dependent SMB profile $\beta (z)$; reverse-mode automatic differentiation through the whole forward run yields the profile whose modelled end-of-window geometry best reproduces the observed one. The ice-flow emulator (frozen weights) supplies the depth-averaged velocity at every step.}}{6}{}\protected@file@percent }
-\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{fig:workflow}{{1}{6}{Overview}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Input and validation data for the three study glaciers. DEM epochs bracket the inversion window; velocities drive the data assimilation; GPR thickness is used only in the optional field inversion (Appendix~\ref {app:gpr}). The stake column gives the number of continuous-record locations averaged for the sRMSE.}}{7}{}\protected@file@percent }
-\newlabel{tab:data}{{1}{7}{Data}{}{}}
-\newlabel{eq:bed}{{3}{7}{Ice-dynamics calibration via data assimilation}{}{}}
-\citation{rabatel2018}
+\newlabel{eq:bed}{{3}{5}{Ice-dynamics calibration via data assimilation}{}{}}
 \citation{miles2021,kneib2024}
-\@writefile{toc}{\contentsline {subsection}{SMB inference by automatic differentiation}{8}{}\protected@file@percent }
-\newlabel{sec:inference}{{}{8}{SMB inference by automatic differentiation}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Observation target.}{8}{}\protected@file@percent }
-\newlabel{eq:hobs}{{4}{8}{Observation target.}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Forward model.}{8}{}\protected@file@percent }
-\newlabel{eq:euler}{{5}{8}{Forward model.}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{SMB parametrisation.}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{SMB inference by automatic differentiation}{6}{}\protected@file@percent }
+\newlabel{sec:inference}{{}{6}{SMB inference by automatic differentiation}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Observation target.}{6}{}\protected@file@percent }
+\newlabel{eq:hobs}{{4}{6}{Observation target.}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Forward model.}{6}{}\protected@file@percent }
+\newlabel{eq:euler}{{5}{6}{Forward model.}{}{}}
+\newlabel{eq:cfl}{{6}{6}{Forward model.}{}{}}
 \citation{liunocedal1989}
-\citation{paszke2017}
-\citation{griewank2000}
-\@writefile{toc}{\contentsline {paragraph}{Inverse problem.}{9}{}\protected@file@percent }
-\newlabel{eq:cost}{{6}{9}{Inverse problem.}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Mapping the one-dimensional profile to the two-dimensional source term, $smb(\mathbf  {x}) = smb(z_s(\mathbf  {x}))$, on Argentière. (a)~The inferred elevation profile $smb(z)$; (b)~the surface elevation $z_s(\mathbf  {x})$; and (c)~the resulting 2D $smb$ field, obtained by evaluating the profile at the surface elevation of every grid cell.}}{7}{}\protected@file@percent }
+\newlabel{fig:prof2field}{{2}{7}{SMB parametrisation.}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{SMB parametrisation.}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Inverse problem.}{7}{}\protected@file@percent }
+\newlabel{eq:cost}{{7}{7}{Inverse problem.}{}{}}
+\citation{baydin2018}
+\citation{abadi2016}
+\citation{griewank2000,chen2016}
 \citation{kneib2024}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Convergence of the SMB inversion on Argentière. The geometry-misfit cost (Eq.~\ref {eq:cost}) against L-BFGS iteration decreases by more than an order of magnitude and levels off within $\mathcal  {O}(10^2)$ function evaluations, reflecting the low dimensionality of the elevation-profile unknown $\mathbf  {m}$.}}{10}{}\protected@file@percent }
-\newlabel{fig:convergence}{{2}{10}{Inverse problem.}{}{}}
-\@writefile{toc}{\contentsline {section}{Results}{10}{}\protected@file@percent }
-\newlabel{sec:results}{{}{10}{Results}{}{}}
-\@writefile{toc}{\contentsline {subsection}{Calibrated ice-dynamics states}{10}{}\protected@file@percent }
-\newlabel{sec:calib}{{}{10}{Calibrated ice-dynamics states}{}{}}
-\citation{kneib2024}
-\citation{kneib2024}
-\citation{kneib2024}
-\citation{kneib2024}
-\citation{kneib2024}
-\citation{kneib2024}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Validation of the inferred SMB against the GLACIOCLIM stake network on Argentière Glacier (main trunk + Améthystes tributary) over 2012--2021. The three baselines are the modelling approaches of \citet  {kneib2024}, evaluated against the same stakes; all three use ice-thickness data, whereas our result uses surface velocity only. The GPR-assisted field inversion, which improves further on these, is reported in Appendix~\ref {app:gpr}.}}{11}{}\protected@file@percent }
-\newlabel{tab:rmse}{{2}{11}{Inferred SMB and validation}{}{}}
-\@writefile{toc}{\contentsline {subsection}{Inferred SMB and validation}{11}{}\protected@file@percent }
-\newlabel{sec:inferred}{{}{11}{Inferred SMB and validation}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Inferred elevation-resolved SMB profile for Argentière Glacier over 2012--2021 (black), obtained with the generic velocity-only pipeline ($\tau _{\mathrm  {ref}}=0.27\,\mathrm  {MPa}$, no thickness data). Green diamonds are the 2012--2021 mean GLACIOCLIM stake balances, plotted at the elevation of each stake; the inferred profile reproduces them with $\mathrm  {RMSE}=0.65\,\mathrm  {m\,w.e.\,yr^{-1}}$. The dashed red curve is the SMB obtained from the continuity equation with a \emph  {stationary} data-assimilation flux divergence (as in geodetic flux-divergence inversions); it departs strongly in the ablation zone ($\mathrm  {RMSE}=2.14$), quantifying the stationary-flux bias that the transient inversion removes.}}{12}{}\protected@file@percent }
-\newlabel{fig:smb-argentiere}{{3}{12}{Inferred SMB and validation}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Inferred SMB profile (black) for (a)~Great Aletsch and (b)~Rhône, compared against in situ stake measurements and against the continuity estimate $\mathrm  {d}h/\mathrm  {d}t + \nabla \!\cdot \mathbf  {q}$ (dashed) obtained with the \emph  {stationary} data-assimilation flux divergence. Faint grey dots are raw single-year stake readings; green diamonds are the continuous-record averages ($\pm $ interannual standard deviation), the validation targets. The inferred profile tracks the averages across the whole elevation range ($\mathrm  {RMSE}=0.61$ and $0.32\,\mathrm  {m\,w.e.\,yr^{-1}}$), whereas the stationary-flux estimate departs strongly in the ablation zone ($1.59$ and $1.63$).}}{13}{}\protected@file@percent }
-\newlabel{fig:smb-continuity}{{4}{13}{Inferred SMB and validation}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Inferred SMB profiles across a range of basal sliding coefficients $\tau _{\mathrm  {ref}}$ for (a)~Argentière, (b)~Great Aletsch and (c)~Rhône; colour encodes $\tau _{\mathrm  {ref}}$ and the adopted profile is drawn bold. Within the low-velocity-misfit basin the profiles coincide in the accumulation area and diverge only at the ablation tongue, so the residual sliding uncertainty translates into an equilibrium-line-altitude band (shaded) rather than a whole-profile bias; the high-sliding runs (dashed), which the velocity misfit rejects, depart most strongly.}}{14}{}\protected@file@percent }
-\newlabel{fig:sens}{{5}{14}{Sensitivity to the basal sliding coefficient}{}{}}
-\@writefile{toc}{\contentsline {subsection}{Sensitivity to the basal sliding coefficient}{14}{}\protected@file@percent }
-\newlabel{sec:sensitivity}{{}{14}{Sensitivity to the basal sliding coefficient}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Data-assimilation surface-velocity misfit (\emph  {velsurf} RMSE) against the independent stake RMSE, pooled over the sliding sweep (six runs per glacier, all three glaciers). Higher velocity misfit is associated with higher stake error (Pearson $r=0.69$, Spearman $\rho =0.63$), so the velocity misfit---the only selector available without stakes---carries usable information about the accuracy of the inferred SMB.}}{15}{}\protected@file@percent }
-\newlabel{fig:corr}{{6}{15}{Sensitivity to the basal sliding coefficient}{}{}}
+\@writefile{toc}{\contentsline {section}{Results}{8}{}\protected@file@percent }
+\newlabel{sec:results}{{}{8}{Results}{}{}}
+\@writefile{toc}{\contentsline {subsection}{Calibrated ice-dynamics states}{8}{}\protected@file@percent }
+\newlabel{sec:calib}{{}{8}{Calibrated ice-dynamics states}{}{}}
+\citation{millan2022}
 \citation{kneib2024}
 \citation{kneib2024}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Sensitivity of the inferred SMB to the basal sliding coefficient $\tau _{\mathrm  {ref}}$ on Great Aletsch and Rhône (both at $A=78$). \emph  {velsurf} is the data-assimilation surface-velocity misfit---the only selector available without stakes---while the stake RMSE is the independent validation against the continuous-record averages ($n$ locations per glacier). Column minima per glacier in bold.}}{16}{}\protected@file@percent }
-\newlabel{tab:sens}{{3}{16}{Sensitivity to the basal sliding coefficient}{}{}}
-\@writefile{toc}{\contentsline {section}{Discussion}{16}{}\protected@file@percent }
-\newlabel{sec:discussion}{{}{16}{Discussion}{}{}}
-\citation{rabatel2018}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Calibrated data-assimilation state on Argentière at the start epoch, for the adopted velocity-only run ($\tau _{\mathrm  {ref}}=0.27\,\mathrm  {MPa}$). (a)~Calibrated ice thickness $H_{t_1}$; (b)~observed surface speed $u_s^{\mathrm  {obs}}$ \citep  {millan2022}; (c)~modelled surface speed $u_s^{\mathrm  {mod}}$, in close agreement with the observations.}}{9}{}\protected@file@percent }
+\newlabel{fig:da-state}{{3}{9}{Calibrated ice-dynamics states}{}{}}
+\@writefile{toc}{\contentsline {subsection}{Inferred SMB and validation}{9}{}\protected@file@percent }
+\newlabel{sec:inferred}{{}{9}{Inferred SMB and validation}{}{}}
 \citation{kneib2024}
 \citation{kneib2024}
 \citation{kneib2024}
-\@writefile{toc}{\contentsline {section}{Appendix}{17}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{GPR-assisted sliding-field inversion on Argentière}{17}{}\protected@file@percent }
-\newlabel{app:gpr}{{}{17}{GPR-assisted sliding-field inversion on Argentière}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces GPR-assisted data-assimilation state on Argentière Glacier at the start epoch. (a)~Calibrated ice thickness $H_{t_1}$ and (b)~calibrated basal-sliding field $\tau _{\mathrm  {ref}}(\mathbf  {x})$; (c)~surface-velocity residual $u_s - u_s^{\mathrm  {obs}}$, near zero across the glacier (overall $\mathrm  {RMS} = 3\,\mathrm  {m\,yr^{-1}}$; white cells lack a velocity observation).}}{18}{}\protected@file@percent }
-\newlabel{fig:da-app}{{7}{18}{GPR-assisted sliding-field inversion on Argentière}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Inferred elevation-resolved SMB profile $\beta (z)$ (blue) for Argentière over 2012--2021 from the GPR-assisted inversion, in water equivalent. Orange dots are the 2012--2021 mean GLACIOCLIM stake balances, plotted at the elevation of each stake. The profile spans 1670--3610\,m\,a.s.l.\ and matches the stakes with $\mathrm  {RMSE}=0.45\,\mathrm  {m\,w.e.\,yr^{-1}}$.}}{19}{}\protected@file@percent }
-\newlabel{fig:smb-app}{{8}{19}{GPR-assisted sliding-field inversion on Argentière}{}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces End-of-window ice-thickness fit on Argentière ($t_2 = 2021$), masked to the glacier footprint. (a)~Target thickness $H^{\mathrm  {obs}}(\cdot , t_2)$ from the observed surface DEM and the calibrated bedrock; (b)~simulated thickness $H^{\mathrm  {sim}}(\cdot , t_2)$ from the forward run under the inferred SMB profile; (c)~their residual $H^{\mathrm  {sim}}-H^{\mathrm  {obs}}$ (RMS $24\,\mathrm  {m}$). The residual is small and largely unbiased; its spatially structured component reflects horizontal variability within elevation bands that the one-dimensional profile does not represent.}}{19}{}\protected@file@percent }
-\newlabel{fig:thk-app}{{9}{19}{GPR-assisted sliding-field inversion on Argentière}{}{}}
-\bibdata{BIBLIO/biblio}
-\bibcite{beraud2023}{{1}{2022}{{Beraud and others}}{{}}}
-\bibcite{berthier2012}{{2}{2012}{{Berthier and Vincent}}{{}}}
-\bibcite{bisset2020}{{3}{2020}{{Bisset and others}}{{}}}
-\bibcite{brun2018}{{4}{2018}{{Brun and others}}{{}}}
-\bibcite{cogley2011}{{5}{2011}{{Cogley and others}}{{}}}
-\bibcite{cuffey2010}{{6}{2010}{{Cuffey and Paterson}}{{}}}
-\bibcite{farinotti2019}{{7}{2019}{{Farinotti and others}}{{}}}
-\bibcite{hugonnet2021}{{8}{2021}{{Hugonnet and others}}{{}}}
-\bibcite{johannesson1989}{{9}{1989}{{J\'ohannesson and others}}{{}}}
-\bibcite{jouvet2023}{{10}{2023}{{Jouvet}}{{}}}
-\bibcite{jouvet_cordonnier2023}{{11}{2023}{{Jouvet and Cordonnier}}{{}}}
-\bibcite{kneib2022}{{12}{2022}{{Kneib and others}}{{}}}
-\bibcite{kneib2024}{{13}{2024}{{Kneib and others}}{{}}}
-\bibcite{marzeion2012}{{14}{2012}{{Marzeion and others}}{{}}}
-\bibcite{miles2021}{{15}{2021}{{Miles and others}}{{}}}
-\bibcite{millan2022}{{16}{2022}{{Millan and others}}{{}}}
-\bibcite{paszke2017}{{17}{2017}{{Paszke and others}}{{}}}
-\bibcite{pelto2021}{{18}{2021}{{Pelto and Menounos}}{{}}}
-\bibcite{rabatel2018}{{19}{2018}{{Rabatel and others}}{{}}}
-\bibcite{radic2014}{{20}{2014}{{Radi\'c and others}}{{}}}
-\bibcite{rounce2020}{{21}{2020}{{Rounce and others}}{{}}}
-\bibcite{vantricht2021}{{22}{2021}{{Van~Tricht and others}}{{}}}
-\bibcite{zekollari2015}{{23}{2015}{{Zekollari and Huybrechts}}{{}}}
-\bibcite{zemp2019}{{24}{2019}{{Zemp and others}}{{}}}
-\bibstyle{igs}
-\gdef \@abspage@last{22}
+\citation{kneib2024}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Validation of the inferred SMB against the GLACIOCLIM stake network on Argentière Glacier (main trunk + Améthystes tributary) over 2012--2021. The three baselines are the modelling approaches of \citet  {kneib2024}, evaluated against the same stakes; all three use ice-thickness data, whereas our result uses surface velocity only. The GPR-assisted field inversion, which improves further on these, is reported in Appendix~\ref {app:gpr}.}}{10}{}\protected@file@percent }
+\newlabel{tab:rmse}{{2}{10}{Inferred SMB and validation}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Inferred SMB profile (black) for (a)~Argentière, (b)~Great Aletsch and (c)~Rhône, compared against in situ stake measurements and against the continuity estimate $\mathrm  {d}h/\mathrm  {d}t + \nabla \!\cdot \mathbf  {q}$ (dashed) obtained with the \emph  {stationary} data-assimilation flux divergence. Green diamonds are the continuous-record stake averages ($\pm $ interannual standard deviation), the validation targets (faint grey dots on Aletsch and Rhône are the raw single-year readings). The inferred profile tracks the averages across the whole elevation range ($\mathrm  {RMSE}=0.65$, $0.61$ and $0.32\,\mathrm  {m\,w.e.\,yr^{-1}}$), whereas the stationary-flux estimate departs strongly in the ablation zone ($2.14$, $1.59$ and $1.63$).}}{11}{}\protected@file@percent }
+\newlabel{fig:smb-continuity}{{4}{11}{Inferred SMB and validation}{}{}}
+\@writefile{toc}{\contentsline {subsection}{Sensitivity to the basal-motion parameter}{11}{}\protected@file@percent }
+\newlabel{sec:sensitivity}{{}{11}{Sensitivity to the basal-motion parameter}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Inferred SMB profiles across a range of the basal-motion parameter $\tau _{\mathrm  {ref}}$ for (a)~Argentière, (b)~Great Aletsch and (c)~Rhône; colour encodes $\tau _{\mathrm  {ref}}$ and the adopted profile is drawn bold. Within the low-velocity-misfit basin the profiles coincide in the accumulation area and diverge only at the ablation tongue, so the residual uncertainty in $\tau _{\mathrm  {ref}}$ translates into an equilibrium-line-altitude band (shaded) rather than a whole-profile bias; the runs the velocity misfit rejects (dashed) depart most strongly.}}{12}{}\protected@file@percent }
+\newlabel{fig:sens}{{5}{12}{Sensitivity to the basal-motion parameter}{}{}}
+\citation{kneib2024}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Data-assimilation surface-velocity misfit (\emph  {velsurf} RMSE) against the independent stake RMSE, pooled over the $\tau _{\mathrm  {ref}}$ sweep (six runs per glacier, all three glaciers). Higher velocity misfit is associated with higher stake error (Pearson $r=0.69$, Spearman $\rho =0.63$), so the velocity misfit---the only selector available without stakes---carries usable information about the accuracy of the inferred SMB.}}{13}{}\protected@file@percent }
+\newlabel{fig:corr}{{6}{13}{Sensitivity to the basal-motion parameter}{}{}}
+\citation{kneib2024}
+\@writefile{toc}{\contentsline {section}{Discussion}{14}{}\protected@file@percent }
+\newlabel{sec:discussion}{{}{14}{Discussion}{}{}}
+\gdef \@abspage@last{14}

@@ -1,3 +1,25 @@
 \begin{abstract}
-The distributed surface mass balance (SMB) of mountain glaciers is a key forcing for glacier evolution and subsequent meltwater availability projections. Yet, direct in situ observations cover less than 0.2\,\% of the world's glacierised area. Here, we present a new SMB inference method, implemented within the open-source Instructed Glacier Model (IGM), that recasts the problem as a fully differentiable transient inversion. The inversion scheme uses observed surface velocities to initialize a dynamically consistent glacier model, then inverts multi-temporal surface elevation changes (DEMs) to estimate the spatial distribution of surface mass balance that best explains the observed glacier evolution. We apply the method to three glaciers in the Alps---Argentière, Great Aletsch and Rhône---evaluating all three with a single, glacier-independent pipeline in which the basal sliding coefficient is fixed by an ensemble search on the surface-velocity misfit alone, and validate the inferred SMB against in situ stake measurements. A sensitivity test shows that this velocity misfit bounds the inferred SMB on stake-free glaciers. Our method is generic, computationally efficient and requires no glacier-specific tuning, making it readily transferable to any glacier with accurate multi-temporal DEMs and surface velocities, opening a path toward regional-scale, continuous SMB inferences.
+	The distributed surface mass balance (SMB) of mountain glaciers is the key
+	forcing for glacier evolution and for projections of meltwater availability.
+	Yet direct observations remain confined to sparse stake networks, and distributed
+	fields have so far been derived only by recent continuity approaches, which combine
+	satellite-derived elevation change with surface velocity. These approaches
+	necessarily assume a stationary ice flow over decadal timescales, and thereby
+	ignore the slow-down of glaciers in a warming climate.
+	Here, we present a new SMB inference method, implemented within the open-source Instructed Glacier
+	Model (IGM), that recasts the problem as a fully differentiable transient
+	inversion. The scheme uses observed surface velocities to initialise a
+	dynamically consistent glacier model, then inverts multi-temporal surface
+	elevation changes to estimate the spatial distribution of mass balance that best
+	explains the observed glacier evolution. We apply the method to three
+	well-studied glaciers in the Alps---Argenti\`ere, Great Aletsch and
+	Rh\^one---evaluating all three with a single, glacier-independent pipeline.
+	Validation against in situ stake measurements shows that surface velocity
+	alone---with no ice-thickness data---suffices to recover a good fit to the observed
+	mass balance. This suggests that the surface-velocity misfit offers a selection
+	criterion where stakes are absent.
+	These results validate our method
+	and render it transferable to any glacier with accurate multi-temporal DEMs and
+	surface velocities, even in the absence of stake measurements, opening a path
+	towards regional-scale, distributed SMB inference.
 \end{abstract}

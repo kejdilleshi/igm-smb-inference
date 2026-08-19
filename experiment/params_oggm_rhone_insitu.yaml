@@ -1,21 +1,29 @@
 # @package _global_
 #
-# SMB inference on Rhonegletscher — IN-HOUSE variant.
-# Period: 2007 → 2016 (9 years), driven by swisstopo DEMs reprojected onto the
-# OGGM grid (data/input_rhone_insitu.nc, built by data/rhone/build_input_nc.py).
-# Considered more reliable than Hugonnet dh/dt for this glacier.
+# SMB inference on Rhonegletscher — IN-HOUSE variant, DA at t2 = 2016.
+# Period: 2007 → 2016 (9 years), swisstopo DEMs on the OGGM grid
+# (data/input_rhone_insitu.nc, built by
+#  `python data/rhone/build_input_nc.py --da-epoch end`).
 #
-# Mirrors the Rhone/OGGM pipeline so run_pipeline.py drives it
-# (--glacier rhone_insitu):
-#   1. data_assimilation — invert thk against velsurf / icemask ONLY
-#                          (velocity-only; NO thickness obs).
-#   2. smb_inference     — forward-run 2007 → 2016, fit a 1-D SMB(z) profile
-#                          (dz=200 m) to match the swisstopo 2016 surface.
+# The DA is done at the END of the SMB period, not the start. The Millan22
+# velocities the DA cost is built on sample ~2015-2017, so inverting on the
+# 2016 surface makes the inversion contemporaneous with its own observations.
+# The bed it implies, topg = usurf(2016) − thk_DA, is then held fixed and the
+# forward run is re-anchored to the 2007 DEM via
+# smb_inference.initial_state.usurf_variable=usurfstart, i.e.
+# H(2007) = max(usurfstart − topg, 0) · icemask.
 #
-# Companion to params_oggm_rhone.yaml (Hugonnet 2006-2020). The in-house
-# 2007-2016 geodetic dh/dt (in input_rhone_insitu.nc) is the less-smooth
-# alternative used by the SMB diagnostics. Same OGGM grid/crop as the Hugonnet
-# variant; Millan22 velocities + GlaThiDa thk reused, only surfaces differ.
+# This REPLACES the earlier DA-at-2007 setup (archived under
+# results/_archive_da_at_t1/). Same data, same names — only the DA epoch and
+# the forward-run re-anchoring changed.
+#
+# Stages (one igm_run, so the SMB inference inherits the DA-retrained emulator):
+#   1. data_assimilation — invert thk against velsurf / icemask ONLY on the
+#                          2016 surface (velocity-only; NO thickness obs).
+#   2. smb_inference     — re-anchor to the 2007 geometry on the DA bed,
+#                          forward-run 2007 → 2016, and fit a 1-D SMB(z)
+#                          profile (dz=200 m) to match the 2016 surface
+#                          (usurfinfer − topg = exactly the DA thickness).
 
 core:
   hardware:
@@ -122,6 +130,11 @@ processes:
     cfl: 0.2
     emulator:
       from_state: true
+    # DA was done on the 2016 surface -> rewind the geometry to 2007 on the
+    # DA-fixed bed before integrating forward. This is the ONLY functional
+    # difference from params_oggm_rhone_insitu.yaml.
+    initial_state:
+      usurf_variable: usurfstart
     observations:
       state_variable: usurfinfer
       smb_points_file: ${hydra:runtime.cwd}/data/rhone/SMB_rhone_2007-2016_rawstakes_utm32N.csv

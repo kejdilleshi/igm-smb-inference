@@ -1,4 +1,4 @@
-\begin{thebibliography}{24}
+\begin{thebibliography}{27}
 \providecommand{\natexlab}[1]{#1}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
@@ -44,6 +44,16 @@ Farinotti D, Huss M, F\"urst JJ, Landmann J, Machguth H, Maussion F and Pandit
   glaciers on {E}arth. \emph{Nature Geoscience}, \textbf{12}(3), 168--173 (\doi
   {10.1038/s41561-019-0300-3})
 
+\bibitem[\protect\citename{{GLAMOS}, }2021]{glamos}
+{GLAMOS} (2021) Swiss glacier monitoring network ({GLAMOS}). Glacier Monitoring
+  Switzerland (\doi {10.18750/massbalance.2021.r2021})
+
+\bibitem[\protect\citename{Griewank and Walther, }2000]{griewank2000}
+Griewank A and Walther A (2000) Algorithm 799: revolve: an implementation of
+  checkpointing for the reverse or adjoint mode of computational
+  differentiation. \emph{ACM Transactions on Mathematical Software},
+  \textbf{26}(1), 19--45 (\doi {10.1145/347837.347846})
+
 \bibitem[\protect\citename{Hugonnet and others, }2021]{hugonnet2021}
 Hugonnet R, McNabb R, Berthier E, Menounos B, Nuth C, Girod L, Farinotti D,
   Huss M, Dussaillant I, Brun F and K\"a\"ab A (2021) Accelerated global
@@ -77,6 +87,11 @@ Kneib M, Dehecq A, Gilbert A, Basset A, Miles ES, Jouvet G, Jourdain B, Ducasse
   E, Beraud L, Rabatel A and others (2024) Distributed surface mass balance of
   an avalanche-fed glacier. \emph{EGUsphere}, \textbf{2024}, 1--35 (\doi
   {10.5194/egusphere-2024-1733})
+
+\bibitem[\protect\citename{Liu and Nocedal, }1989]{liunocedal1989}
+Liu DC and Nocedal J (1989) On the limited memory {BFGS} method for large scale
+  optimization. \emph{Mathematical Programming}, \textbf{45}(1--3), 503--528
+  (\doi {10.1007/BF01589116})
 
 \bibitem[\protect\citename{Marzeion and others, }2012]{marzeion2012}
 Marzeion B, Jarosch AH and Hofer M (2012) Past and future sea-level change from

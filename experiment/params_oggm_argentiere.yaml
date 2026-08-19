@@ -85,17 +85,19 @@ processes:
         old_format: false
 
   data_assimilation:
-    # Thickness-aware DA reproducing outputs/2026-04-29/08-42-26: thk is in the
-    # cost and slidingco is a second control, so the inversion honours the
-    # measured radar thickness (thkobs) instead of letting velocity + reg.thk
-    # drift the geometry away from it (the velocity-only failure mode).
+    # VELOCITY-ONLY DA, matching aletsch_insitu and rhone_insitu. The measured
+    # radar thickness (thkobs) is deliberately kept OUT of the cost and used for
+    # validation only: most glaciers have no such data, so the method must not
+    # depend on it. slidingco is likewise no longer a control — only thk is
+    # inverted, and the swept scalars stay uniform.
+    # (Previously: control_list=[thk, slidingco], cost_list=[velsurf, icemask,
+    #  thk] — the thickness-aware setup, archived under
+    #  results/_archive_da_at_t1/argentiere.)
     control_list:
       - thk
-      - slidingco
     cost_list:
       - velsurf
       - icemask
-      - thk
     optimization:
       nbitmin: 50
       nbitmax: 1000
@@ -147,6 +149,11 @@ processes:
     cfl: 0.2
     emulator:
       from_state: true
+    # DA is done on the 2021 surface (the epoch the observed velocities sample),
+    # so rewind the geometry to 2012 on the DA-fixed bed before integrating
+    # forward: H(2012) = max(usurfstart - topg, 0) * icemask.
+    initial_state:
+      usurf_variable: usurfstart
     observations:
       state_variable: usurfinfer
       smb_points_file: ${hydra:runtime.cwd}/data/argentiere/SMB_argentiere_2012-2021_utm32N.csv

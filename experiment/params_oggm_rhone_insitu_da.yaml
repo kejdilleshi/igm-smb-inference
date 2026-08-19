@@ -1,8 +1,12 @@
 # @package _global_
 #
-# DA-only sweep stage for Rhonegletscher — IN-HOUSE variant, swisstopo DEMs
-# 2007 → 2016 (data/input_rhone_insitu.nc). Same OGGM grid/crop as the Hugonnet
-# variant; only the surfaces (and dh/dt) differ.
+# DA-only sweep stage for Rhonegletscher — IN-HOUSE variant, DA at t2 = 2016
+# (data/input_rhone_insitu.nc, built by `data/rhone/build_input_nc.py --da-epoch end`).
+#
+# Identical to params_oggm_rhone_insitu_da.yaml except that usurf/usurfobs are
+# the swisstopo 2016 DEM instead of the 2007 one: the Millan22 velocities the
+# cost is built on sample ~2015-2017, so inverting on the 2016 surface makes
+# the inversion contemporaneous with its own observations.
 #
 # Velocity-only DA (cost_list = [velsurf, icemask], NO thickness obs). Sweep
 # target for optuna_sweep_da_nsga.py (--experiment params_oggm_rhone_insitu_da).

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2024.9.26)  13 JUL 2026 09:11
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2024.9.26)  27 JUL 2026 09:57
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -574,110 +574,238 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <10.95> on input line 40.
  (./abstract.tex
-Overfull \hbox (1.67657pt too wide) in paragraph at lines 1--3
+Overfull \hbox (1.67657pt too wide) in paragraph at lines 1--19
 []\T1/lmr/bx/n/10.95 ABSTRACT. The dis-tributed sur-face mass bal-ance (SMB) of
  moun-tain glaciers
  []
 
-) (./introduction.tex [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/us
-r/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}
+) (./Methodology.tex
+
+Package natbib Warning: Citation `jouvet2026igm' on page 1 undefined on input l
+ine 10.
+
+[1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texmf/fonts/en
+c/dvips/lm/lm-ec.enc}
 
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}]
 
-Package natbib Warning: Citation `glamos' on page 2 undefined on input line 11.
+Package natbib Warning: Citation `jouvet_cordonnier2023' on page 2 undefined on
+ input line 24.
 
 
-[2] [3]) (./Methodology.tex [4{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.en
-c}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}]
-<figs/Glacier_SMB_Evolution_Workflow.pdf, id=29, 794.97pt x 614.295pt>
+Package natbib Warning: Citation `rosier2026' on page 2 undefined on input line
+ 24.
+
+
+Package natbib Warning: Citation `jouvet2026igm' on page 2 undefined on input l
+ine 29.
+
+
+Package natbib Warning: Citation `rosier2026' on page 2 undefined on input line
+ 29.
+
+
+Package natbib Warning: Citation `seroussi2011' on page 2 undefined on input li
+ne 36.
+
+
+
+pdfTeX warning: /usr/bin/pdflatex (file ./figs/Glacier_SMB_Evolution_Workflow.p
+df): PDF inclusion: found PDF version <1.7>, but at most version <1.5> allowed
+<figs/Glacier_SMB_Evolution_Workflow.pdf, id=13, 745.16393pt x 354.92601pt>
 File: figs/Glacier_SMB_Evolution_Workflow.pdf Graphic file (type pdf)
 <use figs/Glacier_SMB_Evolution_Workflow.pdf>
 Package pdftex.def Info: figs/Glacier_SMB_Evolution_Workflow.pdf  used on input
- line 43.
-(pdftex.def)             Requested size: 506.45905pt x 391.3665pt.
+ line 47.
+(pdftex.def)             Requested size: 506.45905pt x 241.22734pt.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 54.
+(Font)              <10> on input line 58.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 54.
+(Font)              <7> on input line 58.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 54.
- (./Data.tex)
+(Font)              <5> on input line 58.
+(./Data.tex [2{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/te
+xmf/fonts/enc/dvips/lm/lm-mathsy.enc}] [3 <./figs/Glacier_SMB_Evolution_Workflo
+w.pdf>]
+
+LaTeX Warning: Reference `app:gpr' on page 4 undefined on input line 18.
+
+
+Package natbib Warning: Citation `kneib2024' on page 4 undefined on input line 
+19.
+
+
+Package natbib Warning: Citation `millan2022' on page 4 undefined on input line
+ 22.
+
+
+Package natbib Warning: Citation `dehecq2019' on page 4 undefined on input line
+ 24.
+
+
+Package natbib Warning: Citation `millan2022' on page 4 undefined on input line
+ 48.
+
+) [4]
+
+Package natbib Warning: Citation `jouvet2023' on page 5 undefined on input line
+ 72.
+
+
+Package natbib Warning: Citation `rosier2026' on page 5 undefined on input line
+ 81.
+
+
+Package natbib Warning: Citation `millan2022' on page 5 undefined on input line
+ 82.
+
+
+Package natbib Warning: Citation `hansen1992' on page 5 undefined on input line
+ 84.
+
 
 Package natbib Warning: Citation `liunocedal1989' on page 5 undefined on input 
-line 77.
-
-[5{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathex.enc}] [6 <./figs/Glacier_SMB_E
-volution_Workflow.pdf>] [7] [8]
-
-Package natbib Warning: Citation `liunocedal1989' on page 9 undefined on input 
-line 185.
+line 85.
 
 
-Package natbib Warning: Citation `griewank2000' on page 9 undefined on input li
-ne 199.
+Package natbib Warning: Citation `jouvet2023' on page 5 undefined on input line
+ 86.
 
-<figs/smb_loss_curve.png, id=96, 722.7pt x 433.62pt>
-File: figs/smb_loss_curve.png Graphic file (type png)
-<use figs/smb_loss_curve.png>
-Package pdftex.def Info: figs/smb_loss_curve.png  used on input line 207.
-(pdftex.def)             Requested size: 303.87851pt x 182.32426pt.
-) (./Results.tex [9] [10 <./figs/smb_loss_curve.png>]
-<figs/smb_vs_continuity_argentiere.png, id=106, 426.393pt x 640.67355pt>
-File: figs/smb_vs_continuity_argentiere.png Graphic file (type png)
-<use figs/smb_vs_continuity_argentiere.png>
-Package pdftex.def Info: figs/smb_vs_continuity_argentiere.png  used on input l
-ine 64.
-(pdftex.def)             Requested size: 303.87851pt x 456.60196pt.
- [11] [12 <./figs/smb_vs_continuity_argentiere.png>]
-<figs/smb_vs_continuity_aletsch.png, id=115, 433.62pt x 650.43pt>
-File: figs/smb_vs_continuity_aletsch.png Graphic file (type png)
-<use figs/smb_vs_continuity_aletsch.png>
-Package pdftex.def Info: figs/smb_vs_continuity_aletsch.png  used on input line
- 112.
-(pdftex.def)             Requested size: 243.09818pt x 364.65515pt.
-<figs/smb_vs_continuity_rhone.png, id=116, 433.62pt x 650.43pt>
-File: figs/smb_vs_continuity_rhone.png Graphic file (type png)
-<use figs/smb_vs_continuity_rhone.png>
-Package pdftex.def Info: figs/smb_vs_continuity_rhone.png  used on input line 1
-14.
-(pdftex.def)             Requested size: 243.09818pt x 364.65515pt.
- [13 <./figs/smb_vs_continuity_aletsch.png> <./figs/smb_vs_continuity_rhone.png
->]
-<figs/sens_slidingco_3panel.pdf, id=123, 1076.56145pt x 450.47662pt>
+
+Package natbib Warning: Citation `weertman1957' on page 5 undefined on input li
+ne 92.
+
+
+Package natbib Warning: Citation `bergstra2011' on page 5 undefined on input li
+ne 98.
+
+
+Package natbib Warning: Citation `akiba2019' on page 5 undefined on input line 
+99.
+
+[5{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathex.enc}]
+
+Package natbib Warning: Citation `miles2021' on page 6 undefined on input line 
+157.
+
+
+Package natbib Warning: Citation `kneib2024' on page 6 undefined on input line 
+157.
+
+[6]
+<figs/fig_profile_to_field.pdf, id=89, 556.01335pt x 209.62114pt>
+File: figs/fig_profile_to_field.pdf Graphic file (type pdf)
+<use figs/fig_profile_to_field.pdf>
+Package pdftex.def Info: figs/fig_profile_to_field.pdf  used on input line 182.
+
+(pdftex.def)             Requested size: 506.45905pt x 190.94102pt.
+
+
+Package natbib Warning: Citation `liunocedal1989' on page 7 undefined on input 
+line 210.
+
+[7 <./figs/fig_profile_to_field.pdf>]
+
+Package natbib Warning: Citation `baydin2018' on page 8 undefined on input line
+ 217.
+
+
+Package natbib Warning: Citation `abadi2016' on page 8 undefined on input line 
+221.
+
+
+Package natbib Warning: Citation `griewank2000' on page 8 undefined on input li
+ne 228.
+
+
+Package natbib Warning: Citation `chen2016' on page 8 undefined on input line 2
+28.
+
+) (./Results.tex
+
+Package natbib Warning: Citation `kneib2024' on page 8 undefined on input line 
+10.
+
+[8]
+<figs/fig_da_state.pdf, id=170, 512.84209pt x 153.81575pt>
+File: figs/fig_da_state.pdf Graphic file (type pdf)
+<use figs/fig_da_state.pdf>
+Package pdftex.def Info: figs/fig_da_state.pdf  used on input line 32.
+(pdftex.def)             Requested size: 506.45905pt x 151.90956pt.
+
+
+Package natbib Warning: Citation `millan2022' on page 9 undefined on input line
+ 37.
+
+
+Package natbib Warning: Citation `kneib2024' on page 9 undefined on input line 
+62.
+
+
+LaTeX Warning: Reference `app:gpr' on page 9 undefined on input line 68.
+
+
+Package natbib Warning: Citation `kneib2024' on page 9 undefined on input line 
+70.
+
+[9 <./figs/fig_da_state.pdf>]
+
+Package natbib Warning: Citation `kneib2024' on page 10 undefined on input line
+ 81.
+
+
+LaTeX Warning: Reference `app:gpr' on page 10 undefined on input line 81.
+
+
+Package natbib Warning: Citation `kneib2024' on page 10 undefined on input line
+ 87.
+
+
+Package natbib Warning: Citation `kneib2024' on page 10 undefined on input line
+ 88.
+
+
+Package natbib Warning: Citation `kneib2024' on page 10 undefined on input line
+ 89.
+
+<figs/fig_continuity_3panel.pdf, id=240, 530.25226pt x 253.34448pt>
+File: figs/fig_continuity_3panel.pdf Graphic file (type pdf)
+<use figs/fig_continuity_3panel.pdf>
+Package pdftex.def Info: figs/fig_continuity_3panel.pdf  used on input line 108
+.
+(pdftex.def)             Requested size: 506.45905pt x 241.97476pt.
+
+LaTeX Warning: Reference `sec:sota' on page 10 undefined on input line 123.
+
+[10]
+<figs/sens_slidingco_3panel.pdf, id=245, 530.06743pt x 275.02548pt>
 File: figs/sens_slidingco_3panel.pdf Graphic file (type pdf)
 <use figs/sens_slidingco_3panel.pdf>
-Package pdftex.def Info: figs/sens_slidingco_3panel.pdf  used on input line 152
+Package pdftex.def Info: figs/sens_slidingco_3panel.pdf  used on input line 153
 .
-(pdftex.def)             Requested size: 506.45905pt x 211.92337pt.
- [14 <./figs/sens_slidingco_3panel.pdf>]
-<figs/velsurf_vs_stake_rmse.pdf, id=198, 495.16417pt x 419.06049pt>
+(pdftex.def)             Requested size: 506.45905pt x 262.77507pt.
+ [11 <./figs/fig_continuity_3panel.pdf>] [12 <./figs/sens_slidingco_3panel.pdf>
+]
+<figs/velsurf_vs_stake_rmse.pdf, id=403, 253.02518pt x 224.71754pt>
 File: figs/velsurf_vs_stake_rmse.pdf Graphic file (type pdf)
 <use figs/velsurf_vs_stake_rmse.pdf>
 Package pdftex.def Info: figs/velsurf_vs_stake_rmse.pdf  used on input line 183
 .
-(pdftex.def)             Requested size: 303.87851pt x 257.17395pt.
+(pdftex.def)             Requested size: 303.87851pt x 269.90659pt.
+) (./Discussion.tex
+
+Package natbib Warning: Citation `kneib2024' on page 13 undefined on input line
+ 8.
+
+
+LaTeX Warning: Reference `app:gpr' on page 13 undefined on input line 9.
+
+[13 <./figs/velsurf_vs_stake_rmse.pdf>]
+
+Package natbib Warning: Citation `kneib2024' on page 14 undefined on input line
+ 19.
+
 )
-(./Discussion.tex [15 <./figs/velsurf_vs_stake_rmse.pdf>] [16]) (./appendix.tex
-<figs/argentiere_da_panel.png, id=268, 686.565pt x 191.844pt>
-File: figs/argentiere_da_panel.png Graphic file (type png)
-<use figs/argentiere_da_panel.png>
-Package pdftex.def Info: figs/argentiere_da_panel.png  used on input line 33.
-(pdftex.def)             Requested size: 506.45905pt x 141.51738pt.
-[17]
-<figs/argentiere_smb_profile.png, id=272, 240.462pt x 289.4085pt>
-File: figs/argentiere_smb_profile.png Graphic file (type png)
-<use figs/argentiere_smb_profile.png>
-Package pdftex.def Info: figs/argentiere_smb_profile.png  used on input line 60
-.
-(pdftex.def)             Requested size: 278.55402pt x 335.28572pt.
-<figs/argentiere_thk_comparison.png, id=273, 686.8935pt x 197.757pt>
-File: figs/argentiere_thk_comparison.png Graphic file (type png)
-<use figs/argentiere_thk_comparison.png>
-Package pdftex.def Info: figs/argentiere_thk_comparison.png  used on input line
- 71.
-(pdftex.def)             Requested size: 506.45905pt x 145.81284pt.
-) [18 <./figs/argentiere_da_panel.png>] [19 <./figs/argentiere_smb_profile.png>
- <./figs/argentiere_thk_comparison.png>] (./main.bbl [20] [21])
 
 Package caption Warning: Unused \captionsetup[subfigure] on input line 42.
 See the caption package documentation for explanation.
@@ -685,20 +813,24 @@ See the caption package documentation for explanation.
 
 Package natbib Warning: There were undefined citations.
 
-[22] (./main.aux)
+[14] (./main.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2020/03/25>
  ***********
+
+
+LaTeX Warning: There were undefined references.
+
  ) 
 Here is how much of TeX's memory you used:
- 8787 strings out of 476106
- 141201 string characters out of 5793933
- 1938975 words of memory out of 5000000
- 30579 multiletter control sequences out of 15000+600000
+ 8660 strings out of 476106
+ 138293 string characters out of 5793933
+ 1935975 words of memory out of 5000000
+ 30460 multiletter control sequences out of 15000+600000
  662403 words of font info for 124 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
- 80i,12n,105p,1437b,462s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 80i,13n,93p,943b,408s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb></usr/share/texmf/fonts/ty
 pe1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm/lmbx8.pfb></us
 r/share/texmf/fonts/type1/public/lm/lmex10.pfb></usr/share/texmf/fonts/type1/pu
@@ -712,10 +844,10 @@ e/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/l
 m/lmri9.pfb></usr/share/texmf/fonts/type1/public/lm/lmss8.pfb></usr/share/texmf
 /fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy7
 .pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb>
-Output written on main.pdf (22 pages, 1054482 bytes).
+Output written on main.pdf (14 pages, 591842 bytes).
 PDF statistics:
- 386 PDF objects out of 1000 (max. 8388607)
- 165 compressed objects within 2 object streams
+ 561 PDF objects out of 1000 (max. 8388607)
+ 201 compressed objects within 3 object streams
  0 named destinations out of 1000 (max. 500000)
- 51 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 31 words of extra memory for PDF output out of 10000 (max. 10000000)
 

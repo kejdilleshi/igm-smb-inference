@@ -1,0 +1,26 @@
+\section{Conclusions}\label{sec:conclusions}
+
+We have presented a transient, differentiable inversion that recovers the distributed
+surface mass balance of a glacier from two surface DEMs and a single surface-velocity
+field, without ice-thickness measurements or per-glacier tuning. Surface velocity is
+assimilated to fix a dynamically consistent state, and the mass-conservation equation
+is then integrated forward with automatic differentiation to infer the
+elevation-resolved SMB whose modelled geometry change best matches observation.
+Applied through one glacier-independent pipeline to three Alpine glaciers of
+contrasting size, the method reproduces in situ stake balances to
+$0.40$--$0.60\,\mathrm{m\,w.e.\,yr^{-1}}$---surpassing the state-of-the-art
+reconstruction of \citet{kneib2024} on Argentière with surface velocity alone---and
+a factor of roughly two to two-and-a-half better than the
+stationary-flux estimates it replaces.
+
+The central advance is that mass conservation is enforced by construction: because the
+flux divergence is recomputed from the evolving geometry at every step, the inferred
+SMB needs neither the post-hoc smoothing nor the ad-hoc mass redistribution that
+flux-divergence methods require, and stays dynamically consistent over the whole
+observation window. Its accuracy is limited chiefly by the input velocity and DEMs and
+by the one-dimensional elevation parametrisation, which trades sub-band spatial detail
+for transferability. Because the method needs no calibration data beyond fields that
+are approaching near-global coverage, it opens a realistic path towards continuous,
+regional-scale SMB inversion; establishing its robustness across the smaller and more
+varied glacier population that dominates regional water resources is the natural next
+step.

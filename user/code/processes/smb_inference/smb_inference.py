@@ -570,6 +570,37 @@ def initialize(cfg, state):
     else:
         H_init = tf.zeros_like(topg)
 
+    # Optional: re-anchor the forward run to a surface other than the one the
+    # DA was performed on. Used by the "DA at t2" setup: the DA inverts the
+    # thickness against the END-of-period surface — the epoch the observed
+    # velocities actually sample — which fixes the bed as topg = usurf(t2) -
+    # thk_DA. The forward run must still start at t_start, so H_init is rebuilt
+    # from the t1 DEM on that same bed. The target is unchanged (usurfinfer -
+    # topg, i.e. the DA thickness at t2), so the run measures exactly the SMB
+    # needed to carry the t1 geometry onto the observed t2 surface.
+    usurf_var = str(getattr(
+        getattr(smb_cfg, "initial_state", None), "usurf_variable", "") or "")
+    if usurf_var:
+        if not hasattr(state, usurf_var) or getattr(state, usurf_var) is None:
+            raise ValueError(
+                f"[smb_inference] initial_state.usurf_variable='{usurf_var}' "
+                f"but state.{usurf_var} is not available — add it to the input "
+                f"NetCDF (it must be NaN-free; it feeds the emulator)."
+            )
+        on_ice = tf.cast(ice_mask > 0.5, tf.float32)
+        n_on_ice = tf.maximum(tf.reduce_sum(on_ice), 1.0)
+        thk_da = H_init  # the DA geometry, for the log line below
+        # The DA drives thk to 0 outside the icemask; keep the re-anchored
+        # geometry consistent instead of growing ice on off-glacier terrain.
+        H_init = tf.maximum(
+            tf.cast(getattr(state, usurf_var), tf.float32) - topg, 0.0) * on_ice
+        print(
+            f"[smb_inference] Forward run re-anchored to state.{usurf_var}: "
+            f"H_init = max({usurf_var} - topg, 0) * icemask. On-ice mean "
+            f"thickness {float(tf.reduce_sum(H_init) / n_on_ice):.1f} m "
+            f"(DA state was {float(tf.reduce_sum(thk_da * on_ice) / n_on_ice):.1f} m)"
+        )
+
     dx, dy = _get_dx_dy(cfg, state)
     print(f"[smb_inference] Grid: {topg.shape}, dx={dx}, dy={dy}")
 

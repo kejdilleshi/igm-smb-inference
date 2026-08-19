@@ -1,0 +1,82 @@
++ cd /home/klleshi/Documents/igm-smb-inference
++ source /home/klleshi/miniconda3/etc/profile.d/conda.sh
+++ export CONDA_EXE=/home/klleshi/miniconda3/bin/conda
+++ CONDA_EXE=/home/klleshi/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/home/klleshi/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/home/klleshi/miniconda3/bin/python
+++ '[' -z x ']'
++ conda activate igm-pretrain
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate igm-pretrain
++ '[' -n '' ']'
++ local ask_conda
+++ PS1=
+++ __conda_exe shell.posix activate igm-pretrain
+++ '[' -n '' ']'
+++ /home/klleshi/miniconda3/bin/conda shell.posix activate igm-pretrain
++ ask_conda='unset _CE_M
+unset _CE_CONDA
+PS1='\''(igm-pretrain) '\''
+export PATH='\''/home/klleshi/.local/bin:/home/klleshi/bin:/home/klleshi/.vscode-server/cli/servers/Stable-a5b500951314efd502d07465bd138dfbd714a960/server/bin/remote-cli:/home/klleshi/.local/bin:/home/klleshi/bin:/home/klleshi/.nvm/versions/node/v18.20.8/bin:/home/klleshi/miniconda3/envs/igm-pretrain/bin:/home/klleshi/miniconda3/condabin:/home/klleshi/.local/bin:/home/klleshi/bin:/soft/modules/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin'\''
+export CONDA_PREFIX='\''/home/klleshi/miniconda3/envs/igm-pretrain'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''igm-pretrain'\''
+export CONDA_PROMPT_MODIFIER='\''(igm-pretrain) '\''
+export CONDA_PREFIX_1='\''/home/klleshi/miniconda3'\''
+export CONDA_EXE='\''/home/klleshi/miniconda3/bin/conda'\''
+export CONDA_PYTHON_EXE='\''/home/klleshi/miniconda3/bin/python'\'''
++ eval 'unset _CE_M
+unset _CE_CONDA
+PS1='\''(igm-pretrain) '\''
+export PATH='\''/home/klleshi/.local/bin:/home/klleshi/bin:/home/klleshi/.vscode-server/cli/servers/Stable-a5b500951314efd502d07465bd138dfbd714a960/server/bin/remote-cli:/home/klleshi/.local/bin:/home/klleshi/bin:/home/klleshi/.nvm/versions/node/v18.20.8/bin:/home/klleshi/miniconda3/envs/igm-pretrain/bin:/home/klleshi/miniconda3/condabin:/home/klleshi/.local/bin:/home/klleshi/bin:/soft/modules/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin'\''
+export CONDA_PREFIX='\''/home/klleshi/miniconda3/envs/igm-pretrain'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''igm-pretrain'\''
+export CONDA_PROMPT_MODIFIER='\''(igm-pretrain) '\''
+export CONDA_PREFIX_1='\''/home/klleshi/miniconda3'\''
+export CONDA_EXE='\''/home/klleshi/miniconda3/bin/conda'\''
+export CONDA_PYTHON_EXE='\''/home/klleshi/miniconda3/bin/python'\'''
+++ unset _CE_M
+++ unset _CE_CONDA
+++ PS1='(igm-pretrain) '
+++ export PATH=/home/klleshi/.local/bin:/home/klleshi/bin:/home/klleshi/.vscode-server/cli/servers/Stable-a5b500951314efd502d07465bd138dfbd714a960/server/bin/remote-cli:/home/klleshi/.local/bin:/home/klleshi/bin:/home/klleshi/.nvm/versions/node/v18.20.8/bin:/home/klleshi/miniconda3/envs/igm-pretrain/bin:/home/klleshi/miniconda3/condabin:/home/klleshi/.local/bin:/home/klleshi/bin:/soft/modules/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+++ PATH=/home/klleshi/.local/bin:/home/klleshi/bin:/home/klleshi/.vscode-server/cli/servers/Stable-a5b500951314efd502d07465bd138dfbd714a960/server/bin/remote-cli:/home/klleshi/.local/bin:/home/klleshi/bin:/home/klleshi/.nvm/versions/node/v18.20.8/bin:/home/klleshi/miniconda3/envs/igm-pretrain/bin:/home/klleshi/miniconda3/condabin:/home/klleshi/.local/bin:/home/klleshi/bin:/soft/modules/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+++ export CONDA_PREFIX=/home/klleshi/miniconda3/envs/igm-pretrain
+++ CONDA_PREFIX=/home/klleshi/miniconda3/envs/igm-pretrain
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=igm-pretrain
+++ CONDA_DEFAULT_ENV=igm-pretrain
+++ export 'CONDA_PROMPT_MODIFIER=(igm-pretrain) '
+++ CONDA_PROMPT_MODIFIER='(igm-pretrain) '
+++ export CONDA_PREFIX_1=/home/klleshi/miniconda3
+++ CONDA_PREFIX_1=/home/klleshi/miniconda3
+++ export CONDA_EXE=/home/klleshi/miniconda3/bin/conda
+++ CONDA_EXE=/home/klleshi/miniconda3/bin/conda
+++ export CONDA_PYTHON_EXE=/home/klleshi/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/home/klleshi/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ export MPLBACKEND=Agg
++ MPLBACKEND=Agg
++ ARRH=66.7998857041393
++ REGTHK=1000.0
++ GPU=1
++ LOGDIR=logs/sens_slidingco
++ run_one 0.1317
++ v=0.1317
++ wait
++ python pipeline/sensitivity_slidingco.py --glacier rhone_hugonnet2007 --slidingco 0.1317 --arrhenius 66.7998857041393 --reg-thk 1000.0 --gpu 1
++ run_one 0.7442
++ v=0.7442
++ python pipeline/sensitivity_slidingco.py --glacier rhone_hugonnet2007 --slidingco 0.7442 --arrhenius 66.7998857041393 --reg-thk 1000.0 --gpu 1
++ echo 'DONE 0.7442 exit=0'
++ echo 'DONE 0.1317 exit=0'
++ echo 'GPU1 QUEUE COMPLETE'

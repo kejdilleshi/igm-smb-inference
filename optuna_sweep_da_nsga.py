@@ -73,6 +73,13 @@ DEFAULT_EXPERIMENT = "params_oggm_rhone_da"
 DEFAULT_N_TRIALS = 30
 DEFAULT_SEED = 42
 
+# Search bounds for the two swept iceflow scalars (log-uniform).
+# The Arrhenius upper end is 120: values above that are not physical for these
+# Alpine glaciers. The earlier 200 let Aletsch settle at 182, which fits the
+# velocities but is not a defensible ice rheology.
+DEFAULT_SLIDINGCO_BOUNDS = (0.05, 2.0)
+DEFAULT_ARRHENIUS_BOUNDS = (30.0, 120.0)
+
 
 def _experiment_paths(experiment: str):
     sweep_dir = os.path.join(PROJECT_DIR, f"sweep_results_{experiment}")
@@ -113,10 +120,13 @@ def _read_da_costs(trial_dir: str):
 # ── Objective ───────────────────────────────────────────────────────────────
 
 
-def objective(trial: optuna.Trial, gpu_id: int, sweep_dir: str, experiment: str):
+def objective(trial: optuna.Trial, gpu_id: int, sweep_dir: str, experiment: str,
+              bounds=None):
+    slid_lo, slid_hi = (bounds or {}).get("slidingco", DEFAULT_SLIDINGCO_BOUNDS)
+    arrh_lo, arrh_hi = (bounds or {}).get("arrhenius", DEFAULT_ARRHENIUS_BOUNDS)
     params = {
-        "init_slidingco": trial.suggest_float("init_slidingco", 0.05, 2.0, log=True),
-        "init_arrhenius": trial.suggest_float("init_arrhenius", 30.0, 200.0, log=True),
+        "init_slidingco": trial.suggest_float("init_slidingco", slid_lo, slid_hi, log=True),
+        "init_arrhenius": trial.suggest_float("init_arrhenius", arrh_lo, arrh_hi, log=True),
     }
     trial.set_user_attr("gpu_id", gpu_id)
 
@@ -226,13 +236,14 @@ def _save_meta(trial_dir, params, status, elapsed, **extra):
 _study_lock = threading.Lock()
 
 
-def _run_one_trial(study: optuna.Study, gpu_id: int, sweep_dir: str, experiment: str):
+def _run_one_trial(study: optuna.Study, gpu_id: int, sweep_dir: str, experiment: str,
+                   bounds=None):
     with _study_lock:
         trial = study.ask()
 
     try:
         value = objective(trial, gpu_id=gpu_id, sweep_dir=sweep_dir,
-                          experiment=experiment)
+                          experiment=experiment, bounds=bounds)
         with _study_lock:
             study.tell(trial, value)
     except Exception as exc:
@@ -244,19 +255,20 @@ def _run_one_trial(study: optuna.Study, gpu_id: int, sweep_dir: str, experiment:
         )
 
 
-def _worker_loop(study, gpu_id, work_q, sweep_dir, experiment):
+def _worker_loop(study, gpu_id, work_q, sweep_dir, experiment, bounds=None):
     while True:
         try:
             work_q.get_nowait()
         except queue.Empty:
             return
         try:
-            _run_one_trial(study, gpu_id, sweep_dir, experiment)
+            _run_one_trial(study, gpu_id, sweep_dir, experiment, bounds=bounds)
         finally:
             work_q.task_done()
 
 
-def run_parallel(study, n_trials, gpus, workers_per_gpu, sweep_dir, experiment):
+def run_parallel(study, n_trials, gpus, workers_per_gpu, sweep_dir, experiment,
+                 bounds=None):
     work_q: queue.Queue = queue.Queue()
     for _ in range(n_trials):
         work_q.put(None)
@@ -266,7 +278,7 @@ def run_parallel(study, n_trials, gpus, workers_per_gpu, sweep_dir, experiment):
         for w in range(workers_per_gpu):
             t = threading.Thread(
                 target=_worker_loop,
-                args=(study, gpu_id, work_q, sweep_dir, experiment),
+                args=(study, gpu_id, work_q, sweep_dir, experiment, bounds),
                 name=f"gpu{gpu_id}-w{w}",
                 daemon=True,
             )
@@ -382,10 +394,24 @@ def main():
                         help="Comma-separated GPU ids (default: 0,1).")
     parser.add_argument("--workers-per-gpu", type=int, default=3,
                         help="Concurrent trials per GPU (default: 3).")
+    parser.add_argument("--arrhenius-min", type=float,
+                        default=DEFAULT_ARRHENIUS_BOUNDS[0])
+    parser.add_argument("--arrhenius-max", type=float,
+                        default=DEFAULT_ARRHENIUS_BOUNDS[1],
+                        help=f"Upper bound on init_arrhenius "
+                             f"(default: {DEFAULT_ARRHENIUS_BOUNDS[1]:g}). The "
+                             f"study DB records the sampled distribution, so "
+                             f"changing this needs a fresh sweep dir.")
+    parser.add_argument("--slidingco-min", type=float,
+                        default=DEFAULT_SLIDINGCO_BOUNDS[0])
+    parser.add_argument("--slidingco-max", type=float,
+                        default=DEFAULT_SLIDINGCO_BOUNDS[1])
     parser.add_argument("--plots-only", action="store_true",
                         help="Skip running trials; just regenerate plots.")
     args = parser.parse_args()
     gpus = [int(g) for g in args.gpus.split(",") if g.strip()]
+    bounds = {"slidingco": (args.slidingco_min, args.slidingco_max),
+              "arrhenius": (args.arrhenius_min, args.arrhenius_max)}
 
     paths = _experiment_paths(args.experiment)
     sweep_dir = paths["sweep_dir"]; db_path = paths["db_path"]
@@ -410,6 +436,8 @@ def main():
     print(f"  Already completed  : {n_done}")
     print(f"  GPUs               : {gpus}")
     print(f"  Workers per GPU    : {args.workers_per_gpu}")
+    print(f"  init_slidingco     : [{args.slidingco_min:g}, {args.slidingco_max:g}]")
+    print(f"  init_arrhenius     : [{args.arrhenius_min:g}, {args.arrhenius_max:g}]")
     print(f"  Concurrent trials  : {total_workers}")
     print(f"  Results directory  : {sweep_dir}")
     print()
@@ -418,7 +446,8 @@ def main():
     if not args.plots_only and n_remaining > 0:
         run_parallel(study, n_trials=n_remaining, gpus=gpus,
                      workers_per_gpu=args.workers_per_gpu,
-                     sweep_dir=sweep_dir, experiment=args.experiment)
+                     sweep_dir=sweep_dir, experiment=args.experiment,
+                     bounds=bounds)
 
     completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
     if completed:

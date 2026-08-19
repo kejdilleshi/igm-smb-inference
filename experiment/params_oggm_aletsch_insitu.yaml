@@ -121,6 +121,11 @@ processes:
     cfl: 0.2
     emulator:
       from_state: true
+    # DA is done on the 2017 surface (the epoch the observed velocities sample),
+    # so rewind the geometry to 2009 on the DA-fixed bed before integrating
+    # forward: H(2009) = max(usurfstart - topg, 0) * icemask.
+    initial_state:
+      usurf_variable: usurfstart
     observations:
       state_variable: usurfinfer
       smb_points_file: ${hydra:runtime.cwd}/data/aletsch/SMB_aletsch_2009-2017_rawstakes_utm32N.csv

@@ -1,0 +1,54 @@
+%% The Cryosphere (Copernicus) build of the manuscript.
+%% Kept separate from main.tex (Journal of Glaciology / igs class) so both toolchains coexist.
+%% Shares the same content files: abstract, introduction, Methodology, Results, Discussion, appendix.
+\documentclass[tc, manuscript]{copernicus}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+\newcommand\dirbiblio{BIBLIO}
+
+\begin{document}
+
+\title{Surface mass balance inference based on a transient glacier evolution model inversion}
+
+\Author[1]{Kejdi}{Lleshi}
+\Author[1]{G.}{Jouvet}
+\Author[1]{F.}{Herman}
+\Author[2,3]{M.}{Kneib}
+\Author[1]{T.}{Gregov}
+
+\affil[1]{Institute of Earth Surface Dynamics, University of Lausanne, Lausanne, Switzerland}
+\affil[2]{Laboratory of Hydraulics, Hydrology and Glaciology (VAW), ETH Zurich, Zurich, Switzerland}
+\affil[3]{Swiss Federal Institute for Forest, Snow and Landscape Research (WSL), Sion, Switzerland}
+\correspondence{Kejdi LLeshi (kejdi.lleshi@unil.ch)}
+
+\runningtitle{Transient-inversion SMB from geometry change}
+\runningauthor{LLeshi and others}
+
+\received{}
+\pubdiscuss{}
+\revised{}
+\accepted{}
+\published{}
+
+\firstpage{1}
+
+\maketitle
+
+\input{abstract.tex}
+
+\input{introduction.tex}
+\input{Methodology.tex}
+\input{Results.tex}
+\input{Discussion.tex}
+\input{Conclusions.tex}
+%\newpage
+\input{appendix.tex}
+
+\bibliographystyle{copernicus}
+\bibliography{\dirbiblio/biblio}
+
+\end{document}

@@ -39,17 +39,33 @@ from lcurve import parse_param  # noqa: E402  (re-exported for downstream tools)
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # name -> RGI id. experiment = params_oggm_<name>; _da derived.
+# The three in-house ("insitu") glaciers used in the paper — aletsch_insitu,
+# rhone_insitu, argentiere — all now assimilate on the END-of-period surface
+# (the epoch the observed velocities sample) and rewind the SMB forward run to
+# the start geometry on the DA-fixed bed, via
+# processes.smb_inference.initial_state.usurf_variable=usurfstart.
+# All three use velocity-only DA (cost_list = [velsurf, icemask]); measured
+# thickness is kept for validation only and never enters the pipeline.
+# The earlier DA-at-start results are archived in results/_archive_da_at_t1/.
 GLACIERS = {
     "aletsch":     "RGI60-11.01450",
-    # In-house Aletsch variant (swisstopo DEMs 2009-2017): the "rgi" here is a
-    # filename stem so input_nc resolves to data/input_aletsch.nc; experiment =
-    # params_oggm_aletsch_insitu(_da). Velocity-only DA, same pipeline.
+    # In-house Aletsch variant (swisstopo DEMs 2009-2017, DA on 2017): the "rgi"
+    # here is a filename stem so input_nc resolves to data/input_aletsch.nc;
+    # experiment = params_oggm_aletsch_insitu(_da).
     "aletsch_insitu": "aletsch",
     "rhone":       "RGI60-11.01238",
-    # In-house Rhone variant (swisstopo DEMs 2007-2016): "rgi" is a filename
-    # stem so input_nc resolves to data/input_rhone_insitu.nc; experiment =
-    # params_oggm_rhone_insitu(_da). Velocity-only DA, same pipeline.
+    # In-house Rhone variant (swisstopo DEMs 2007-2016, DA on 2016): "rgi" is a
+    # filename stem so input_nc resolves to data/input_rhone_insitu.nc;
+    # experiment = params_oggm_rhone_insitu(_da).
     "rhone_insitu": "rhone_insitu",
+    # Hugonnet-anchored Rhone variant (Appendix A2): SAME DA epoch (2016),
+    # bed and 2007-2016 window as rhone_insitu -- only the 2007 start
+    # surface differs (Hugonnet-implied vs. surveyed swisstopo). "rgi" is a
+    # filename stem so input_nc resolves to data/input_rhone_hugonnet2007.nc
+    # (built by data/rhone/build_input_hugonnet2007.py); experiment =
+    # params_oggm_rhone_hugonnet2007(_da). Replaces the earlier, WRONG
+    # rhone_da2020 (mismatched ~2006-2020 window), deleted not archived.
+    "rhone_hugonnet2007": "rhone_hugonnet2007",
     "findelen":    "RGI60-11.02773",
     "corbassiere": "RGI60-11.02766",
     # Glacier d'Argentière (French Alps) — IN-HOUSE variant, NOT an OGGM/GLAMOS
@@ -81,6 +97,20 @@ def run(cmd, dry, env=None, cwd=PROJECT_DIR):
     if env:
         full_env.update(env)
     subprocess.run([str(c) for c in cmd], cwd=cwd, env=full_env, check=True)
+
+
+def pin_gpu(args, cmd, env):
+    """Pin an igm_run to args.igm_gpu, via CUDA_VISIBLE_DEVICES + hydra override.
+
+    CUDA_VISIBLE_DEVICES already hides every other card, so TensorFlow sees the
+    chosen GPU re-indexed to 0. igm_run.py then does `gpus[i] for i in
+    cfg.core.hardware.visible_gpus`, so the override must be [0] — passing the
+    physical index (e.g. [1]) raises IndexError before the run starts.
+    """
+    if args.igm_gpu is None:
+        return
+    cmd.append("core.hardware.visible_gpus=[0]")
+    env["CUDA_VISIBLE_DEVICES"] = str(args.igm_gpu)
 
 
 def sweep_summary_path(da_experiment):
@@ -164,11 +194,8 @@ def stage_da_lcurve(args, ctx, state):
     ]
     if args.da_nbitmax is not None:
         cmd.append(f"processes.data_assimilation.optimization.nbitmax={args.da_nbitmax}")
-    if args.igm_gpu is not None:
-        cmd.append(f"core.hardware.visible_gpus=[{args.igm_gpu}]")
     env = {"TF_FORCE_GPU_ALLOW_GROWTH": "true"}
-    if args.igm_gpu is not None:
-        env["CUDA_VISIBLE_DEVICES"] = str(args.igm_gpu)
+    pin_gpu(args, cmd, env)
     run(cmd, args.dry_run, env=env)
 
     run([sys.executable, "pipeline/analyze_da_lcurve.py", sweep_dir,
@@ -206,11 +233,8 @@ def stage_final(args, ctx, state):
     ]
     if args.da_nbitmax is not None:
         cmd.append(f"processes.data_assimilation.optimization.nbitmax={args.da_nbitmax}")
-    if args.igm_gpu is not None:
-        cmd.append(f"core.hardware.visible_gpus=[{args.igm_gpu}]")
     env = {"TF_FORCE_GPU_ALLOW_GROWTH": "true"}
-    if args.igm_gpu is not None:
-        env["CUDA_VISIBLE_DEVICES"] = str(args.igm_gpu)
+    pin_gpu(args, cmd, env)
     run(cmd, args.dry_run, env=env)
     print(f"[final] combined run written under {final_dir}/  "
           f"(SMB results in smb_inference/)")
@@ -261,7 +285,9 @@ def main():
     ap.add_argument("--workers-per-gpu", default="3", help="Optuna concurrent trials per GPU")
     ap.add_argument("--igm-gpu", type=int, default=None,
                     help="Pin DA L-curve + final igm_run to this single GPU "
-                         "(overrides core.hardware.visible_gpus in the YAML). "
+                         "(sets CUDA_VISIBLE_DEVICES; the YAML's "
+                         "core.hardware.visible_gpus is forced to [0], the "
+                         "index the card gets once the others are masked). "
                          "Use this when running two pipelines in parallel to "
                          "keep them on different GPUs and avoid OOM.")
     ap.add_argument("--pause-after-da", action="store_true",
@@ -307,10 +333,20 @@ def main():
     start = STAGES.index(args.from_stage)
     plan_stages = STAGES[start:]
 
+    # A dry-run executes nothing, so it must not touch pipeline_state.json /
+    # pipeline_summary.json — otherwise it silently rewrites the recorded
+    # provenance of whatever real run last wrote results/<glacier>/final, and
+    # the summary ends up describing parameters no run ever used. (This is how
+    # rhone_insitu's summary came to claim A=78/reg=300 for a final/ that
+    # .hydra/overrides.yaml shows was actually A=55.54/reg=1000.)
+    def persist(st):
+        if not args.dry_run:
+            save_state(results_dir, st)
+
     if "sweep" in plan_stages:
-        stage_sweep(args, ctx, state); save_state(results_dir, state)
+        stage_sweep(args, ctx, state); persist(state)
     if "da_lcurve" in plan_stages:
-        stage_da_lcurve(args, ctx, state); save_state(results_dir, state)
+        stage_da_lcurve(args, ctx, state); persist(state)
         if args.pause_after_da:
             print("\n[pause] DA L-curve done. Inspect "
                   f"{os.path.join(results_dir, 'da_lcurve', 'lcurve_step1.png')} then resume:\n"
@@ -320,9 +356,13 @@ def main():
                   f"--init-arrhenius {state.get('init_arrhenius')}")
             return
     if "final" in plan_stages:
-        stage_final(args, ctx, state); save_state(results_dir, state)
+        stage_final(args, ctx, state); persist(state)
 
     summary = {"glacier": args.glacier, "rgi": rgi, **state}
+    if args.dry_run:
+        print("\n=== dry-run: state/summary NOT written (would be) ===")
+        print(json.dumps(summary, indent=2))
+        return
     with open(os.path.join(results_dir, "pipeline_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)
     print(f"\n=== done. summary: {os.path.join(results_dir, 'pipeline_summary.json')} ===")

@@ -1,0 +1,72 @@
+\section{Discussion}\label{sec:discussion}
+
+Separating surface mass balance from dynamic thinning in an observed
+surface-elevation change is a notoriously ill-posed problem, yet it is exactly what
+deriving SMB from remote sensing demands. We have addressed it with a transient,
+differentiable inversion: a state-of-the-art assimilation of surface ice speed fixes
+the dynamical state, and a novel automatic-differentiation scheme then inverts the
+multi-temporal geometry change for the elevation-resolved SMB. On three Alpine
+glaciers of contrasting size the method reproduces the in situ stake balances to
+root-mean-square errors of $0.65$ (Argentière), $0.61$ (Great Aletsch) and
+$0.32\,\mathrm{m\,w.e.\,yr^{-1}}$ (Rhône), on par with the best physically-based
+reconstructions of \citet{kneib2024} on the same Argentière stakes and, where GPR
+thickness is assimilated, surpassing them (Appendix~A1).
+Two features set the approach apart from that state of the art.
+First, the flux divergence is recomputed from the evolving geometry at every time step
+rather than held at a single stationary snapshot, so the inferred SMB is dynamically
+consistent and avoids the ablation-zone bias that makes stationary-flux estimates a
+factor of two to five worse against the same stakes.
+Second, the inversion needs only surface velocity---no
+ice-thickness survey and no per-glacier tuning---and proved largely insensitive to
+the rate factor $A$, so a single glacier-independent pipeline transfers across all
+three sites.
+
+The clearest methodological gain is in how mass conservation is enforced.
+Flux-divergence inversions form the SMB by differentiating the observed
+thickness--velocity flux and combining it with the elevation-change field; because
+that divergence is the spatial derivative of a product of two noisy fields, it must
+be smoothed before use, and the smoothing---as \citet{kneib2024}
+document---breaks
+the very mass-conservation constraint the method rests on, leaving a spurious
+glacier-wide flux-divergence residual of order $0.1$--$0.7\,\mathrm{m\,yr^{-1}}$ that
+they close by redistributing the excess or deficit uniformly across the glacier. Such
+a homogeneous redistribution is a pragmatic fix rather than a physical statement: it
+spreads a computational residual over cells that did not produce it. Our formulation
+removes the need for either step. Because we integrate the mass-conservation equation
+forward and evaluate the flux divergence on the modelled geometry with a
+conservative, slope-limited scheme, mass is conserved by construction at every step;
+the inferred SMB field requires no post-hoc smoothing and no ad-hoc redistribution,
+and the divergence it implies is guaranteed consistent with the simulated geometry
+change.
+
+The method's principal limitation is its one-dimensional parametrisation: horizontal
+variability within an elevation band---such as the avalanche-fed accumulation
+hotspots resolved by \citet{kneib2024}---is deliberately not recovered. This buys a
+transferable, tuning-free inversion and is not intrinsic to the scheme, which admits
+richer descriptions (an aspect or debris-cover dependence, say) wherever the data
+warrant them. A second limitation is the thickness--sliding ambiguity of
+Sect.~\ref{sec:sensitivity}: surface velocity constrains the basal-motion parameter
+only to a band, and the resulting freedom, negligible in the accumulation area, opens
+into an equilibrium-line spread at the tongue. Two further dependencies are shared
+with flux-based methods. Accuracy is ultimately set by the input velocity and DEMs:
+\citet{kneib2024} find that substituting the coarser global velocity mosaic of
+\citet{millan2022} into their reconstruction degrades the stake agreement to
+$\sim$1.2--1.3$\,\mathrm{m\,w.e.\,yr^{-1}}$, so the velocity field can itself become
+limiting---that our transient inversion attains $0.32$--$0.65\,\mathrm{m\,w.e.\,yr^{-1}}$
+using precisely that global product is encouraging, but its robustness to velocity
+error should not be overstated. Finally, like all geodetic estimates the method
+converts a volume change to a mass balance under an assumed ice density and neglects
+evolving firn compaction; where the firn column is thick or densifying, this
+introduces a systematic offset.
+
+Taken together, these properties point towards regional-scale application. Because the
+pipeline requires no thickness survey, no stake calibration and no site-specific
+tuning, it can in principle be applied wherever multi-temporal DEMs and a
+surface-velocity field exist---and both are approaching near-global coverage, through
+the elevation-change archive of \citet{hugonnet2021} and expanding velocity products
+\citep{millan2022}. Its accuracy will track that of these inputs, so the highest
+fidelity will come from dedicated high-resolution DEMs; but the tuning-free character
+makes a continuous, distributed SMB inversion over many glaciers a realistic next
+step. Whether the robustness shown here on three large, well-monitored glaciers
+persists across the smaller and more varied population that dominates regional water
+resources is the key open question, and the natural direction for future work.

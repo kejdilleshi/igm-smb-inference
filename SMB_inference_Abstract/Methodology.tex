@@ -2,55 +2,73 @@
 
 \subsection{Overview}\label{sec:overview}
 
-We recover the surface mass balance (SMB) of a glacier with a two-step pipeline,
-implemented as a process module within the open-source Instructed Glacier Model
-\citep[IGM;][]{jouvet2023, jouvet_cordonnier2023}. The forward problem is governed
-by depth-integrated mass conservation,
+The observational inputs to our method are two surface digital elevation models
+(DEMs) of the glacier, acquired at epochs $t_1$ and $t_2$ several years apart,
+together with a surface-velocity field observed near $t_2$, the epoch closer to the
+velocity acquisition for all three glaciers studied here. From these we infer the
+glacier's surface mass balance ($smb$) with a two-step pipeline
+(Fig.~\ref{fig:workflow}), implemented within the open-source Instructed Glacier
+Model \citep[IGM;][]{jouvet2026igm}.
+The elevation change between
+the two DEMs is the signal used to recover the $smb$ (Sect.~\ref{sec:data}).
+At its core is the depth-integrated mass-conservation equation, which links this
+geometry change to the $smb$,
 \begin{equation}
-  \frac{\partial H}{\partial t} = b - \nabla\cdot\mathbf{q},
+  \frac{\partial H}{\partial t} = smb - \nabla\cdot\mathbf{q},
   \qquad
-  \mathbf{q} = H\,\bar{\mathbf{u}}(H, z_s, \tau_{\mathrm{ref}}),
+  \mathbf{q} = H\,\bar{\mathbf{u}},
   \label{eq:masscons}
 \end{equation}
-where $H$ is the ice thickness, $b$ the SMB, $z_s = z_b + H$ the surface elevation,
-$\tau_{\mathrm{ref}}$ the basal sliding coefficient (a reference basal shear
-stress; Sect.~\ref{sec:da}), and $\bar{\mathbf{u}}$ the depth-averaged horizontal
-velocity returned by IGM's deep-learning ice-flow emulator
-\citep{jouvet_cordonnier2023}. The emulator's network weights are pretrained on a
-large ensemble of higher-order flow solutions and held \emph{frozen} throughout: it
-serves purely as a fast, differentiable surrogate for the ice-flow operator and is
-never retrained per glacier.
+where $H$ is the ice thickness, $smb$ is the surface mass balance, $\mathbf{q}$ is the flux and
+$\bar{\mathbf{u}}$ is the depth-averaged horizontal velocity. All mass terms are
+expressed in ice equivalent, so that \eqref{eq:masscons} is dimensionally
+homogeneous; where the inferred $smb$ is compared with stake measurements it is
+converted to water equivalent using an ice density of $917\,\mathrm{kg\,m^{-3}}$.
+The velocity is supplied by IGM's deep-learning ice-flow
+emulator \citep{jouvet_cordonnier2023, rosier2026}, trained on a large ensemble of
+higher-order flow solutions to return $\bar{\mathbf{u}}$ from the ice geometry and
+the flow parameters.
+The emulator can be used in two ways. In the \emph{online} mode its weights are
+updated during the simulation itself, at every step, by minimising the physical
+energy associated with the current geometry, so the flow model adapts continuously
+to the glacier at hand; because the weights then depend on the simulation history,
+the map from geometry to velocity is not a fixed one, which makes this mode
+ill-suited to inversion. In the \emph{offline} mode the weights are pretrained on a
+controlled, high-quality catalogue of glacier geometries and then held frozen, so
+that map is a single deterministic function the inversion can differentiate
+through. We use the offline mode throughout, and refer the reader to
+\citet{jouvet2026igm} and \citet{rosier2026} for details.
 
-Equation~\eqref{eq:masscons} makes the central difficulty explicit: the geometry
-evolution depends jointly on the unknown SMB $b$ and on the ice dynamics through
-the flux $\mathbf{q}$, which itself depends on $H$ and $\tau_{\mathrm{ref}}$.
-Inferring $b$ from an observed geometry change therefore requires the dynamical
-state to be fixed beforehand; otherwise an error in the dynamics would be aliased
-into the inferred SMB. Our pipeline reflects this dependence directly
-(Fig.~\ref{fig:workflow}): (i)~we first calibrate the dynamical state by data
-assimilation against a surface-velocity snapshot near the start of the inversion
-window, inverting the ice-thickness field $H$; the flow is controlled not only by
-the geometry but also by two scalar parameters that enter the flux---the sliding
-coefficient $\tau_{\mathrm{ref}}$ and the Arrhenius (rate) factor $A$---which we fix
-beforehand by an ensemble search (Sect.~\ref{sec:da}). (ii)~Holding the calibrated
-state fixed, we then infer the SMB: starting from the first surface DEM, we integrate
-\eqref{eq:masscons} forward to the epoch of the second and seek the
-elevation-dependent SMB profile whose simulated geometry best matches the observed
-one (Sect.~\ref{sec:inference}).
+Equation~\eqref{eq:masscons} makes the central challenge explicit: the geometry
+evolution depends jointly on the unknown $smb$ and on the ice dynamics through the
+flux $\mathbf{q}$. Inferring the $smb$ from an observed geometry change therefore
+requires the dynamical state to be fixed beforehand; otherwise an error in the
+dynamics would be aliased into the inferred $smb$. An inconsistent initial state
+triggers an initialisation shock \citep{seroussi2011} that our short (up to
+ten-year) windows cannot absorb, unlike long spin-up simulations. Our pipeline
+reflects this dependence directly (Fig.~\ref{fig:workflow}): (i)~we first calibrate
+the dynamical state by data assimilation against a surface-velocity snapshot near
+$t_2$, inverting the ice-thickness field $H$ and, with it, the bedrock
+(Sect.~\ref{sec:da}). (ii)~Holding the bedrock fixed, we derive the ice thickness at
+the start epoch from the observed $t_1$ DEM, then infer the $smb$: we integrate
+\eqref{eq:masscons} forward from $t_1$ to $t_2$ and seek the $smb$ whose simulated
+geometry best matches the calibrated one at $t_2$
+(Sect.~\ref{sec:inference}).
 
 \begin{figure*}
   \centering
   \includegraphics[width=\linewidth]{figs/Glacier_SMB_Evolution_Workflow.pdf}
   \caption{Overview of the two-step SMB-inference workflow. \emph{Step~1 (data
-    assimilation):} the observed surface velocity and the start-epoch DEM are
-    assimilated to recover the ice thickness $H_{t_1}$---and hence the bedrock---while
+    assimilation):} the observed surface velocity and the end-epoch DEM are
+    assimilated to recover the ice thickness $H_{t_2}$---and hence the bedrock---while
     the scalar flow parameters $(\tau_{\mathrm{ref}}, A)$ are selected by an ensemble
     search that minimises the surface-velocity misfit. \emph{Step~2 (SMB inference):}
-    with the calibrated state held fixed, the transient model is integrated from the
-    start DEM to the end DEM under a candidate elevation-dependent SMB profile
-    $\beta(z)$; reverse-mode automatic differentiation through the whole forward run
+    with the bedrock fixed, the start-epoch thickness $H_{t_1}$ is derived from the
+    observed start DEM, and the transient model is integrated from the start DEM
+    to the end DEM under a candidate elevation-dependent profile
+    $smb(z)$; reverse-mode automatic differentiation (AD) through the whole forward run
     yields the profile whose modelled end-of-window geometry best reproduces the
-    observed one. The ice-flow emulator (frozen weights) supplies the depth-averaged
+    calibrated one. The ice-flow emulator (frozen weights) supplies the depth-averaged
     velocity at every step.}
   \label{fig:workflow}
 \end{figure*}
@@ -59,117 +77,154 @@ one (Sect.~\ref{sec:inference}).
 
 \subsection{Ice-dynamics calibration via data assimilation}\label{sec:da}
 
-The calibration seeks the ice-thickness field that, when passed through the
-ice-flow emulator, best reproduces the observed surface velocities. We use IGM's
-existing data-assimilation module \citep{jouvet2023} to invert for the thickness
+
+The first step of the pipeline uses two of the observational fields introduced
+above---the surface velocity and the $t_2$ DEM---to recover the ice-thickness field
+that places the glacier in a dynamically consistent state, free of the initialisation
+shock described in Sect.~\ref{sec:overview}.
+
+We use IGM's existing data-assimilation module \citep{jouvet2023} to invert for the thickness
 $H$ by minimising the regularised misfit
 \begin{equation}
   \mathcal{J}_{\mathrm{DA}}(H) =
   \alpha_u \big\|\mathbf{u}_s(H) - \mathbf{u}_s^{\mathrm{obs}}\big\|^2
-  + \alpha_H \big\|H - H^{\mathrm{obs}}\big\|^2_{\Omega_{\mathrm{thk}}}
   + \mathcal{R}(H),
   \label{eq:da}
 \end{equation}
-where $\mathbf{u}_s(H)$ is the modelled surface velocity returned by the emulator,
-the second term penalises departure from point ice-thickness measurements over
-their survey footprint $\Omega_{\mathrm{thk}}$ (active only where such data exist),
-and $\mathcal{R}$ is a Tikhonov-style smoothness regulariser on $H$. The
+where $\mathbf{u}_s(H)$ is the modelled surface velocity returned by the emulator
+\citep{rosier2026}, $\mathbf{u}_s^{\mathrm{obs}}$ is the observed surface velocity
+\citep{millan2022},
+and $\mathcal{R}$ is a Tikhonov smoothness regulariser on $H$. The smoothness weight is set at the corner of the resulting L-curve
+\citep{hansen1992}, beyond which further smoothing degrades the velocity fit without
+appreciably reducing thickness roughness (Fig.~\ref{fig:dalcurve}). The
 minimisation is solved by L-BFGS \citep{liunocedal1989}; we refer the reader to
 \citet{jouvet2023} for the full formulation, weighting strategy and convergence
-behaviour. In the main analysis we assume no glacier carries a thickness survey, so
-the second term is dropped and the calibration is governed by the surface-velocity
-misfit and the regulariser alone; the smoothness weight in $\mathcal{R}$ is set at
-the corner of the resulting L-curve.
+behaviour.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.5\linewidth]{figs/fig_da_lcurve.pdf}
+  \caption{Selecting the smoothness weight of the data assimilation, shown for Great
+    Aletsch. Each point is one assimilation, labelled by its Tikhonov weight:
+    stronger smoothing lowers the thickness roughness (horizontal axis) but worsens
+    the fit to the observed surface velocity (vertical axis). The corner of the curve
+    (star) is the point beyond which further smoothing buys little reduction in
+    roughness for a rapidly rising misfit, and fixes the weight used thereafter. The
+    same sequence of weights and the same corner-detection rule are applied to all
+    three glaciers, returning 100 (Argenti\`ere), 600 (Great Aletsch) and 1000
+    (Rh\^one).}
+  \label{fig:dalcurve}
+\end{figure}
+
 
 The emulated flow regime is not set by the geometry alone: it also depends on two
-scalar physical parameters, the basal sliding coefficient $\tau_{\mathrm{ref}}$ and
-the ice rate (Arrhenius) factor $A$. Here $\tau_{\mathrm{ref}}$ is the reference
-basal shear stress in Weertman's sliding law---the shear stress sustaining a
-reference basal speed, in MPa---so that a smaller $\tau_{\mathrm{ref}}$ corresponds
+scalar physical parameters, the basal-motion parameter $\tau_{\mathrm{ref}}$ and
+the Arrhenius factor $A$. Here $\tau_{\mathrm{ref}}$ (in MPa) is the reference
+basal shear stress in Weertman's sliding law \citep{weertman1957}---the shear stress sustaining a
+reference basal speed of $100\,\mathrm{m\,yr^{-1}}$---so that a smaller
+$\tau_{\mathrm{ref}}$ corresponds
 to easier sliding. Rather than invert these pointwise, we fix them beforehand by an
-ensemble (Optuna) search: candidate $(\tau_{\mathrm{ref}}, A)$ pairs are each passed
-through the data assimilation, and we retain the pair that minimises the
+ensemble search: candidate $(\tau_{\mathrm{ref}}, A)$ pairs are drawn log-uniformly
+from $[0.05, 2.0]\,\mathrm{MPa}$ and $[30, 200]\,\mathrm{MPa^{-3}\,yr^{-1}}$ by a
+Tree-structured Parzen Estimator \citep[TPE;][]{bergstra2011}, as implemented in
+Optuna \citep{akiba2019}, and each pair is passed
+through the data assimilation; we retain the pair that minimises the
 surface-velocity misfit, so the assimilation itself inverts the thickness $H$ alone.
 We apply this identical procedure to all three glaciers, which keeps the pipeline
-free of glacier-specific tuning. The rate factor is held at a representative Alpine
-value ($A = 78\,\mathrm{MPa^{-3}\,yr^{-1}}$) throughout, since the flow---and hence
-the inferred SMB---is far less sensitive to $A$ than to $\tau_{\mathrm{ref}}$
-(Sect.~\ref{sec:sensitivity}).
+free of glacier-specific tuning. 
 
-The calibration inverts the thickness at the start epoch $t_1$, which we denote
-$H_{t_1}$. Fixing the thickness also fixes the bedrock,
+Data assimilation inverts the thickness at the epoch closest to the velocity
+observations---the end epoch $t_2$ for all three glaciers studied here---which we
+denote $H_{t_2}$. Finding the thickness fixes the bedrock,
 \begin{equation}
-  z_b(\mathbf{x}) = z_s^{\mathrm{obs}}(\mathbf{x}, t_1) - H_{t_1}(\mathbf{x}),
+  z_b(\mathbf{x}) = z_s^{\mathrm{obs}}(\mathbf{x}, t_2) - H_{t_2}(\mathbf{x}),
   \label{eq:bed}
 \end{equation}
-which, assuming $z_b$ does not evolve over the inversion window---justified on
-decadal timescales---provides the fixed substrate on which the transient run
-subsequently evolves. Only once the calibrated state matches the observed velocity
+which provides the substrate on which the transient run subsequently evolves: held
+fixed, it also gives the thickness at the start epoch $t_1$ directly from the
+observed $t_1$ DEM (Sect.~\ref{sec:inference}).
+Only once the calibrated state matches the observed velocity
 to within observational uncertainty do we accept it and proceed to the SMB
 inversion.
 
-Where an independent thickness survey \emph{is} available---as on Argentière, whose
-ground-penetrating-radar (GPR) soundings \citep{rabatel2018} make a joint inversion
-identifiable---the same framework can go further and relax $\tau_{\mathrm{ref}}$ into
-a spatial field inverted alongside $H$ (retaining the second term of
-Eq.~\ref{eq:da}). This is an optional refinement, developed in
-Appendix~\ref{app:gpr}; it is not part of the common pipeline applied to all three
-glaciers.
-
 \subsection{SMB inference by automatic differentiation}\label{sec:inference}
 
-\paragraph{Observation target.}
-With the dynamical state calibrated (Sect.~\ref{sec:da}), the inversion is driven by
-the geometry change between the two DEM epochs. The bedrock is already fixed through
-Eq.~\eqref{eq:bed}; combining it with the observed end-of-window surface DEM gives
-the target thickness
+\paragraph{Initial condition and target.}
+With the dynamical state calibrated at $t_2$ (Sect.~\ref{sec:da}), the SMB inversion
+is driven by the geometry change between the two DEM epochs. The bedrock is already
+fixed through Eq.~\eqref{eq:bed}; combining it with the observed start-of-window
+surface DEM gives the thickness that initialises the forward run,
 \begin{equation}
-  H^{\mathrm{obs}}(\mathbf{x}, t_2) = z_s^{\mathrm{obs}}(\mathbf{x}, t_2) - z_b(\mathbf{x}).
+  H_{t_1}(\mathbf{x}) = z_s^{\mathrm{obs}}(\mathbf{x}, t_1) - z_b(\mathbf{x}).
+  \label{eq:hinit}
+\end{equation}
+By the same construction, combining the fixed bedrock with the observed
+end-of-window surface DEM returns exactly the DA-calibrated thickness,
+\begin{equation}
+  H^{\mathrm{obs}}(\mathbf{x}, t_2) = z_s^{\mathrm{obs}}(\mathbf{x}, t_2) - z_b(\mathbf{x}) \equiv H_{t_2}(\mathbf{x}),
   \label{eq:hobs}
 \end{equation}
-The two surface DEMs $z_s^{\mathrm{obs}}(\cdot, t_1)$ and
-$z_s^{\mathrm{obs}}(\cdot, t_2)$ are the glacier-specific two-epoch elevation models
-of Sect.~\ref{sec:data}; their difference defines the geometry change the inversion
-must reproduce.
-
+which is therefore the target the forward run is fitted against: the data
+assimilation's own calibrated state rather than an independent observation.
 \paragraph{Forward model.}
-With the calibrated thickness $H_{t_1}$ and the flow scalars
-$(\tau_{\mathrm{ref}}, A)$ held fixed, the glacier evolves according to
-\eqref{eq:masscons}, which we integrate explicitly with a forward-Euler scheme,
+With the derived thickness $H_{t_1}$ (Eq.~\ref{eq:hinit}) and the flow scalars
+$(\tau_{\mathrm{ref}}, A)$ held fixed, the glacier is evolved from $t_1$ to $t_2$ by
+integrating \eqref{eq:masscons} with an explicit forward-Euler scheme,
 \begin{equation}
-  H^{n+1} = \max\!\big(0,\; H^n + \Delta t^n [\,b^n - \nabla\cdot\mathbf{q}^n\,]\big),
+  H^{n+1} = \max\!\big(0,\; H^n + \Delta t^n [\,smb^n - \nabla\cdot\mathbf{q}^n\,]\big),
   \label{eq:euler}
 \end{equation}
 where the non-negativity projection prevents spurious negative thicknesses near the
-margin. The step is limited by a Courant--Friedrichs--Lewy condition,
-$\Delta t^n = c_{\mathrm{cfl}}\,\Delta x / \max_\Omega\|\bar{\mathbf{u}}^n\|$, with
-$c_{\mathrm{cfl}} = 0.2 < 1$ ensuring stability, and the flux divergence is evaluated
-with a centred finite-difference stencil on the staggered grid. Because
-$\bar{\mathbf{u}}$ is recomputed from the current $(H, z_s)$ at every step, the flux
-divergence evolves with the geometry rather than being held at its initial-snapshot
-value---the property that removes the stationary-flux bias of geodetic
-flux-divergence inversions \citep{miles2021, kneib2024}.
+margin. The integration starts from $H^0 = H_{t_1}$ and advances until the accumulated
+time reaches $t_2$; the number of steps $N_t$ is therefore not prescribed but follows
+from the step sizes selected along the way. Each step is limited by a
+Courant--Friedrichs--Lewy condition,
+\begin{equation}
+  \Delta t^n = \min\!\Big(c_{\mathrm{cfl}}\,\Delta x \big/
+  \max_\Omega\|\bar{\mathbf{u}}^n\|,\;\; \Delta t_{\max}\Big),
+  \label{eq:cfl}
+\end{equation}
+with $c_{\mathrm{cfl}} = 0.2$ ensuring stability and
+$\Delta t_{\max} = 1\,\mathrm{yr}$ capping the step where the ice is slow. The flux
+divergence is evaluated on the staggered grid with a slope-limited scheme, which
+suppresses spurious oscillations at the steep thickness gradients near the margin. At
+every step the surface is updated as $z_s^n = z_b + H^n$ and $\bar{\mathbf{u}}$ is
+recomputed by the emulator from the current $(H, z_s)$, so the flux divergence evolves
+with the geometry rather than being held at its initial-snapshot value. Conventional
+flux-divergence methods \citep{miles2021, kneib2024}, which we retain as a reference in
+Sect.~\ref{sec:results}, instead evaluate $smb = \partial H/\partial t +
+\nabla\cdot\mathbf{q}$ once from the calibrated state.
 
 \paragraph{SMB parametrisation.}
-Rather than treat the SMB as an independent unknown at every grid cell---which would
-leave the inversion severely underdetermined, since the geometry supplies at most one
-constraint per cell, and none where the ice is thin or absent---we parametrise it as
-a one-dimensional profile $\beta(z)$, a function of surface elevation only. This
-reflects the first-order elevation control on alpine SMB and collapses the unknown
+Rather than treat the $smb$ as an independent unknown at every grid cell, which would
+leave the inversion severely underdetermined, we parametrise it as a one-dimensional
+profile $smb(z)$, a function of surface elevation only.
+This reflects the first-order elevation control on alpine $smb$ and collapses the unknown
 from $\mathcal{O}(10^4)$ pixels to $N = \mathcal{O}(10)$ elevation bins, which
 regularises the otherwise severely ill-posed inversion without site-specific
-smoothing length scales or density assumptions. The profile is discretised at $N$
-uniformly spaced elevation bins by the values $\mathbf{m} = (m_1, \ldots, m_N)$, and
-at each time step it is mapped to the 2D source term in \eqref{eq:masscons} by
+smoothing length scales or density assumptions. The profile is discretised on
+uniformly spaced elevation bins, $200\,\mathrm{m}$ wide for all three glaciers, by the
+values $\mathbf{m} = (m_1, \ldots, m_N)$, and
+it is mapped to the two-dimensional source term in \eqref{eq:masscons} by
 evaluating it at the current surface elevation,
-$b(\mathbf{x}, t) = \beta(z_s(\mathbf{x}, t))$, with piecewise-linear interpolation
-between bins. The parametrisation is deliberately minimal; the same differentiable
-framework admits richer descriptions (for instance an additional aspect or
-debris-cover dependence) where the data warrant them, offering a principled route to
-lift residual non-uniqueness.
+$smb(\mathbf{x}, t) = smb(z_s(\mathbf{x}, t))$, with piecewise-linear interpolation
+between bins (Fig.~\ref{fig:prof2field}). The parametrisation is deliberately minimal:
+our aim is an $smb$ that explains the observed geometry change, not the resolution of
+its fine spatial structure.
+
+\begin{figure*}
+  \centering
+  \includegraphics[width=\linewidth]{figs/fig_profile_to_field.pdf}
+  \caption{Mapping the one-dimensional profile to the two-dimensional source term,
+    $smb(\mathbf{x}) = smb(z_s(\mathbf{x}))$, on Argentière. (a)~The inferred
+    elevation profile $smb(z)$; (b)~the surface elevation $z_s(\mathbf{x})$; and
+    (c)~the resulting 2D $smb$ field, obtained by evaluating the profile at the surface
+    elevation of every grid cell.}
+  \label{fig:prof2field}
+\end{figure*}
 
 \paragraph{Inverse problem.}
-We seek the profile $\mathbf{m}^\star$ that minimises the misfit between the
+We seek the smb profile $\mathbf{m}^\star$ that minimises the misfit between the
 simulated end-of-window thickness $H^{\mathrm{sim}}(\cdot, t_2; \mathbf{m})$ and the
 target $H^{\mathrm{obs}}(\cdot, t_2)$ from \eqref{eq:hobs}:
 \begin{equation}
@@ -179,35 +234,54 @@ target $H^{\mathrm{obs}}(\cdot, t_2)$ from \eqref{eq:hobs}:
   \;+\; \mathcal{R}(\mathbf{m}),
   \label{eq:cost}
 \end{equation}
-where the first term is the RMS geometry misfit and $\mathcal{R}(\mathbf{m})$ is a
-Tikhonov-style smoothness penalty on the squared discrete curvature of the profile,
-with weight $\lambda$ trading data fidelity against smoothness. The minimisation uses
+where the first term is the RMS geometry misfit and
+$\mathcal{R}(\mathbf{m}) = \lambda \sum_i (m_{i-1} - 2m_i + m_{i+1})^2$ is a
+Tikhonov smoothness penalty on the squared discrete curvature of the profile.
+The weight $\lambda$ carries a direct physical reading: it sets how much the $smb$ may
+change from one elevation bin to the next, and hence how strongly the recovered
+gradient is smoothed (Fig \ref{fig:lambda}). We use $\lambda = 0.05$ for all three glaciers rather than
+tuning it per site. Varying it over $0.01$--$0.5$ on Rhône moves the geometry misfit
+by less than $5\,\%$ while the profile roughness falls by an order of magnitude
+(Fig.~\ref{fig:lambda}a), and the recovered profile is insensitive through the centre
+of that range: between $\lambda = 0.05$ and $0.1$ the equilibrium-line altitude is
+unchanged and the stake RMSE differs by $0.01\,\mathrm{m\,w.e.\,yr^{-1}}$
+(Fig.~\ref{fig:lambda}b). Only the extremes degrade the fit, the profile tracking
+noise in the geometry change at $\lambda = 0.01$ and being over-smoothed at
+$\lambda = 0.5$. The minimisation uses
 L-BFGS \citep{liunocedal1989} with $M = 10$ correction pairs and a Hager--Zhang line
 search; the low dimensionality of $\mathbf{m}$ makes the implicit Hessian
 approximation accurate, and convergence is reached in $\mathcal{O}(10^2)$ function
-evaluations (Fig.~\ref{fig:convergence}). The gradient
-$\nabla_{\mathbf{m}}\mathcal{J}$ is obtained by reverse-mode automatic
-differentiation \citep{paszke2017} through the entire forward integration
-\eqref{eq:masscons}--\eqref{eq:euler}: every operation in the forward map---the
-emulator evaluation, the staggered-grid divergence, the explicit Euler update, and
-the piecewise-linear elevation interpolation---is a differentiable TensorFlow
-operation, so the chain rule applies uniformly across the forward graph and gradients
-propagate cleanly through every time step. The principal limitation is memory: a
-naïve AD trace stores the full computational graph, whose footprint scales as
-$\mathcal{O}(N_t \cdot N_\Omega)$ with $N_t$ time steps and $N_\Omega$ grid points,
-exceeding the budget of a single GPU. We address this with gradient checkpointing
-\citep{griewank2000}: the integration is partitioned into $K = \sqrt{N_t}$ segments,
-only the segment-boundary states are stored during the forward pass, and the
-within-segment graphs are reconstructed during the backward pass, reducing the memory
-cost from $\mathcal{O}(N_t)$ to $\mathcal{O}(\sqrt{N_t})$ at the price of one
-additional forward evaluation per backward pass.
+evaluations.
 
-\begin{figure}
+\begin{figure*}
   \centering
-  \includegraphics[width=0.6\linewidth]{figs/smb_loss_curve.png}
-  \caption{Convergence of the SMB inversion on Argentière. The geometry-misfit cost
-    (Eq.~\ref{eq:cost}) against L-BFGS iteration decreases by more than an order of
-    magnitude and levels off within $\mathcal{O}(10^2)$ function evaluations,
-    reflecting the low dimensionality of the elevation-profile unknown $\mathbf{m}$.}
-  \label{fig:convergence}
-\end{figure}
+  \includegraphics[width=0.8\linewidth]{figs/fig_lambda_lcurve.pdf}
+  \caption{Choice of the smoothness weight $\lambda$, shown for Rhône. Each point is
+    one inversion, all sharing the same calibrated dynamical state so that only
+    $\lambda$ varies. (a)~Stronger smoothing lowers the roughness of the profile at
+    the cost of the geometry misfit. (b)~Stake RMSE against $\lambda$; the shaded
+    band marks the range over which the recovered profile is effectively unchanged,
+    and the fit degrades only at the extremes. The star is the adopted
+    $\lambda = 0.05$.}
+  \label{fig:lambda}
+\end{figure*}
+
+The gradient
+$\nabla_{\mathbf{m}}\mathcal{J}$ is obtained by reverse-mode automatic
+differentiation \citep{baydin2018} through the entire forward integration
+\eqref{eq:masscons}--\eqref{eq:euler}: every operation in the forward map---the
+emulator evaluation, the slope-limited divergence, the explicit Euler update and
+the piecewise-linear elevation interpolation---is a differentiable TensorFlow
+\citep{abadi2016} operation, so the chain rule applies uniformly across the forward
+graph and the sensitivity of the end-of-window geometry to each bin value is
+propagated exactly through every time step.
+
+The principal cost is memory. Automatic differentiation must retain intermediate
+quantities from the forward run in order to traverse it backwards, and a decade-long
+integration exceeds the memory of a single GPU. We therefore use gradient
+checkpointing \citep{griewank2000, chen2016}: instead of storing the internal
+quantities of every step, we keep only the glacier state $(H, z_s)$ at the start of
+each step and recompute that step's internals when the backward pass reaches it. The
+saving is substantial because the emulator evaluation---by far the heaviest part of a
+step---is never stored, only replayed; the price is one additional evaluation of each
+step per gradient.
